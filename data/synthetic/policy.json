@@ -1,0 +1,12 @@
+{
+  "policy_id": "SYN-POL-LMRI-001",
+  "version": "demo-1",
+  "synthetic": true,
+  "notice": "Illustrative demo policy only; not a real payer policy and not for clinical use.",
+  "service": "Lumbar MRI",
+  "criteria": [
+    {"criterion_id": "C1", "text": "Documentation describes persistent low back symptoms", "evidence_expectation": "A dated chart source describing symptoms and duration"},
+    {"criterion_id": "C2", "text": "Conservative treatment history is documented for at least six weeks", "evidence_expectation": "Source evidence identifying treatment and dates sufficient to calculate duration"},
+    {"criterion_id": "C3", "text": "A clinician request for lumbar MRI is documented", "evidence_expectation": "A dated order or note documenting the request"}
+  ]
+}

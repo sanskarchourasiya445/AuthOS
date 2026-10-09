@@ -1,0 +1,29 @@
+[
+  {
+    "patient_id": "SYN-P001",
+    "scenario": "sufficient_evidence",
+    "documents": [
+      {"source_id": "SYN-P001-NOTE-01", "patient_id": "SYN-P001", "date": "2026-08-01", "text": "Patient reports low back pain for 10 weeks. No bowel or bladder changes reported."},
+      {"source_id": "SYN-P001-PT-02", "patient_id": "SYN-P001", "date": "2026-09-15", "text": "Patient completed supervised physical therapy from July 1 through August 20, 2026, with persistent symptoms."},
+      {"source_id": "SYN-P001-ORDER-03", "patient_id": "SYN-P001", "date": "2026-09-18", "text": "Ordering clinician requests lumbar MRI for persistent low back pain following conservative treatment."}
+    ]
+  },
+  {
+    "patient_id": "SYN-P002",
+    "scenario": "evidence_requires_review",
+    "documents": [
+      {"source_id": "SYN-P002-NOTE-01", "patient_id": "SYN-P002", "date": "2026-08-04", "text": "Patient reports low back pain for approximately 2 months."},
+      {"source_id": "SYN-P002-PT-02", "patient_id": "SYN-P002", "date": "2026-09-02", "text": "Physical therapy was discussed. Patient attended several sessions; exact start date and duration are not documented."},
+      {"source_id": "SYN-P002-ORDER-03", "patient_id": "SYN-P002", "date": "2026-09-03", "text": "Lumbar MRI requested. Prior conservative-treatment duration requires clarification."}
+    ]
+  },
+  {
+    "patient_id": "SYN-P003",
+    "scenario": "contradictory_evidence",
+    "documents": [
+      {"source_id": "SYN-P003-NOTE-01", "patient_id": "SYN-P003", "date": "2026-08-10", "text": "Patient reports low back pain for 8 weeks."},
+      {"source_id": "SYN-P003-PT-02", "patient_id": "SYN-P003", "date": "2026-08-11", "text": "Physical therapy was offered. Patient declined physical therapy at this visit."},
+      {"source_id": "SYN-P003-ORDER-03", "patient_id": "SYN-P003", "date": "2026-08-12", "text": "Lumbar MRI requested. Documentation of completed conservative treatment is not present in the supplied chart."}
+    ]
+  }
+]
