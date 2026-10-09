@@ -100,7 +100,12 @@ class PostgresCaseRepository:
                 criteria_results=criteria_results,
             )
 
-    def record_review(self, case_id: str, request: ReviewActionRequest) -> ReviewActionResponse:
+    def record_review(
+        self,
+        case_id: str,
+        request: ReviewActionRequest,
+        actor: str = "HUMAN_REVIEWER (UNAUTHENTICATED_DEV)",
+    ) -> ReviewActionResponse:
         session = self._session_factory()
         try:
             # Row lock to prevent race conditions during review
@@ -116,13 +121,13 @@ class PostgresCaseRepository:
                     detail={"code": ErrorCode.CASE_NOT_FOUND.value, "message": f"Case '{case_id}' was not found."},
                 )
 
-            # Prevent modifying finalized or rejected cases
-            if case.status in (CaseStatus.FINALIZED.value, CaseStatus.REJECTED.value):
+            # Only permit reviewing cases that have completed evaluation
+            if case.status not in (CaseStatus.RESULTS_READY.value, CaseStatus.IN_HUMAN_REVIEW.value):
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail={
                         "code": ErrorCode.INVALID_STATE_TRANSITION.value,
-                        "message": f"Cannot submit review actions for case '{case_id}' because it is {case.status}.",
+                        "message": f"Cannot submit review actions for case '{case_id}' because it is in status '{case.status}'.",
                     },
                 )
 
@@ -151,7 +156,7 @@ class PostgresCaseRepository:
                 criterion_id=request.criterion_id,
                 action=request.action.value,
                 note=request.note,
-                actor="HUMAN_REVIEWER (UNAUTHENTICATED_DEV)",
+                actor=actor,
                 created_at=now,
             )
             session.add(audit)
@@ -170,7 +175,12 @@ class PostgresCaseRepository:
         finally:
             session.close()
 
-    def finalize_packet(self, case_id: str, request: FinalizationActionRequest) -> ReviewPacket:
+    def finalize_packet(
+        self,
+        case_id: str,
+        request: FinalizationActionRequest,
+        actor: str = "HUMAN_REVIEWER (UNAUTHENTICATED_DEV)",
+    ) -> ReviewPacket:
         session = self._session_factory()
         try:
             # Row lock to prevent concurrent double-approvals
@@ -186,12 +196,13 @@ class PostgresCaseRepository:
                     detail={"code": ErrorCode.CASE_NOT_FOUND.value, "message": f"Case '{case_id}' was not found."},
                 )
 
-            if case.status in (CaseStatus.FINALIZED.value, CaseStatus.REJECTED.value):
+            # Only permit finalization or rejection for cases that have completed evaluation
+            if case.status not in (CaseStatus.RESULTS_READY.value, CaseStatus.IN_HUMAN_REVIEW.value):
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail={
                         "code": ErrorCode.INVALID_STATE_TRANSITION.value,
-                        "message": f"Case '{case_id}' is already settled (status: {case.status}).",
+                        "message": f"Cannot finalize packet for case '{case_id}' in status '{case.status}'. Case must be evaluated first.",
                     },
                 )
 
@@ -215,7 +226,7 @@ class PostgresCaseRepository:
                 criterion_id=None,
                 action=action_str,
                 note=request.reviewer_note,
-                actor="HUMAN_REVIEWER (UNAUTHENTICATED_DEV)",
+                actor=actor,
                 created_at=now,
             )
             session.add(audit)
@@ -282,6 +293,10 @@ class PostgresCaseRepository:
             for r in results
         ]
 
+        # Determine canonical generated_at from the latest evaluation completion audit event
+        eval_audit = next((a for a in reversed(audits) if a.action == "CASE_EVALUATION_COMPLETED"), None)
+        canonical_generated_at = eval_audit.created_at.isoformat() if (eval_audit and eval_audit.created_at) else None
+
         finalized = (case.status == CaseStatus.FINALIZED.value)
         return ReviewPacket(
             case_id=case.case_id,
@@ -294,6 +309,6 @@ class PostgresCaseRepository:
             finalized=finalized,
             finalized_at=case.finalized_at.isoformat() if case.finalized_at else None,
             reviewer_note=case.reviewer_note,
-            generated_at=datetime.now(timezone.utc).isoformat(),
+            generated_at=canonical_generated_at,
             audit_events=audit_events,
         )

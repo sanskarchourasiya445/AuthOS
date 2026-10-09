@@ -154,9 +154,12 @@ def evaluate_case(case_id: str, session: Session) -> ReviewPacket:
     )
     session.add(audit)
 
-    # 6. Update case status if in initial state
-    if case.status in (CaseStatus.DRAFT.value, CaseStatus.RUNNING.value, CaseStatus.RESULTS_READY.value):
-        case.status = CaseStatus.RESULTS_READY.value
+    # 6. Update case status based on evaluation outcome
+    if case.status in (CaseStatus.DRAFT.value, CaseStatus.RUNNING.value, CaseStatus.RESULTS_READY.value, CaseStatus.IN_HUMAN_REVIEW.value):
+        if has_non_met:
+            case.status = CaseStatus.IN_HUMAN_REVIEW.value
+        else:
+            case.status = CaseStatus.RESULTS_READY.value
 
     session.flush()
 

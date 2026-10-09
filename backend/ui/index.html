@@ -406,6 +406,16 @@
     <!-- Controls Bar -->
     <div class="controls-bar">
       <div class="control-group">
+        <label for="actorSelect">Authenticated Actor:</label>
+        <select id="actorSelect" onchange="switchActor()">
+          <option value="dr_chen">Dr. Sarah Chen, MD (Reviewer — All Cases)</option>
+          <option value="dr_ross">Dr. Allison Ross, MD (Reviewer — CASE-SYN-001 Only)</option>
+          <option value="auditor_jane">Jane Doe (Auditor — Read Only)</option>
+          <option value="admin_alex">Alex Rivera (Admin — Full Access)</option>
+        </select>
+      </div>
+
+      <div class="control-group">
         <label for="caseSelect">Synthetic Case:</label>
         <select id="caseSelect" onchange="loadCase()">
           <option value="CASE-SYN-001">CASE-SYN-001 (Sufficient Evidence / SYN-P001)</option>
@@ -513,6 +523,16 @@
   <div id="toast" class="toast">Action recorded successfully.</div>
 
   <script>
+    let currentAuthToken = null;
+    let currentActorProfile = null;
+
+    const SYNTHETIC_CREDS = {
+      dr_chen: { username: "dr_chen", password: "synthetic-demo-pass-dr-chen" },
+      dr_ross: { username: "dr_ross", password: "synthetic-demo-pass-dr-ross" },
+      auditor_jane: { username: "auditor_jane", password: "synthetic-demo-pass-auditor-jane" },
+      admin_alex: { username: "admin_alex", password: "synthetic-demo-pass-admin-alex" }
+    };
+
     function showToast(msg) {
       const t = document.getElementById('toast');
       t.innerText = msg;
@@ -520,14 +540,67 @@
       setTimeout(() => { t.style.display = 'none'; }, 3500);
     }
 
+    async function switchActor() {
+      const selected = document.getElementById('actorSelect').value;
+      const creds = SYNTHETIC_CREDS[selected];
+      try {
+        const res = await fetch('/api/v1/auth/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(creds)
+        });
+        if (!res.ok) {
+          throw new Error('Authentication failed');
+        }
+        const data = await res.json();
+        currentAuthToken = data.access_token;
+        currentActorProfile = data.user;
+        showToast(`Signed in as ${data.user.name} (${data.user.role})`);
+        await loadCase();
+      } catch (err) {
+        showToast('Auth error: ' + err.message);
+      }
+    }
+
+    async function authFetch(url, options = {}) {
+      options.headers = options.headers || {};
+      if (currentAuthToken) {
+        options.headers['Authorization'] = `Bearer ${currentAuthToken}`;
+      }
+      return fetch(url, options);
+    }
+
+    async function parseErrorMessage(res, defaultMsg) {
+      try {
+        const text = await res.text();
+        if (!text) return `${defaultMsg} (HTTP ${res.status})`;
+        try {
+          const data = JSON.parse(text);
+          return data.error?.message || data.detail?.message || data.detail || `${defaultMsg}: ${text.slice(0, 100)}`;
+        } catch {
+          return `${defaultMsg}: ${text.slice(0, 100)}`;
+        }
+      } catch {
+        return defaultMsg;
+      }
+    }
+
     async function loadCase() {
       const caseId = document.getElementById('caseSelect').value;
       try {
-        const caseRes = await fetch(`/api/v1/cases/${caseId}`);
+        const caseRes = await authFetch(`/api/v1/cases/${caseId}`);
+        if (!caseRes.ok) {
+          const msg = await parseErrorMessage(caseRes, "Failed to load case metadata");
+          throw new Error(msg);
+        }
         const caseData = await caseRes.json();
 
         // Load packet preview
-        const packetRes = await fetch(`/api/v1/cases/${caseId}/packet?preview=true`);
+        const packetRes = await authFetch(`/api/v1/cases/${caseId}/packet?preview=true`);
+        if (!packetRes.ok) {
+          const msg = await parseErrorMessage(packetRes, "Failed to load review packet");
+          throw new Error(msg);
+        }
         const packetData = await packetRes.json();
 
         renderSummary(caseData, packetData);
@@ -535,7 +608,7 @@
         renderAudit(packetData.audit_events || []);
       } catch (err) {
         console.error("Error loading case:", err);
-        showToast("Error loading case: " + err.message);
+        showToast("Error: " + err.message);
       }
     }
 
@@ -661,10 +734,10 @@
     async function triggerEvaluate() {
       const caseId = document.getElementById('caseSelect').value;
       try {
-        const res = await fetch(`/api/v1/cases/${caseId}/evaluate`, { method: 'POST' });
+        const res = await authFetch(`/api/v1/cases/${caseId}/evaluate`, { method: 'POST' });
         if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.detail?.message || err.detail || 'Evaluation failed');
+          const msg = await parseErrorMessage(res, "Evaluation failed");
+          throw new Error(msg);
         }
         showToast("Deterministic evaluation completed.");
         await loadCase();
@@ -684,7 +757,7 @@
       }
 
       try {
-        const res = await fetch(`/api/v1/cases/${caseId}/review`, {
+        const res = await authFetch(`/api/v1/cases/${caseId}/review`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -695,8 +768,8 @@
         });
 
         if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.detail?.message || err.detail || 'Failed to save review action');
+          const msg = await parseErrorMessage(res, "Failed to save review action");
+          throw new Error(msg);
         }
 
         document.getElementById(`note_${critId}`).value = '';
@@ -718,7 +791,7 @@
       }
 
       try {
-        const res = await fetch(`/api/v1/cases/${caseId}/approve`, {
+        const res = await authFetch(`/api/v1/cases/${caseId}/approve`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -728,8 +801,8 @@
         });
 
         if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.detail?.message || err.detail || 'Finalization failed');
+          const msg = await parseErrorMessage(res, "Finalization failed");
+          throw new Error(msg);
         }
 
         document.getElementById('finalNote').value = '';
@@ -750,8 +823,8 @@
         .replace(/'/g, '&#039;');
     }
 
-    // Initial load
-    window.addEventListener('DOMContentLoaded', loadCase);
+    // Initial load: authenticate initial actor and load case
+    window.addEventListener('DOMContentLoaded', switchActor);
   </script>
 </body>
 </html>

@@ -85,6 +85,17 @@ class EndToEndWorkflowTests(unittest.TestCase):
         self.app.dependency_overrides[get_repository] = lambda: self.repo
         self.client = TestClient(self.app)
 
+        from backend.auth.schemas import AuthenticatedUser, UserRole
+        from backend.auth.security import create_access_token
+        dev_reviewer = AuthenticatedUser(
+            sub="REV-001",
+            name="Dr. Sarah Chen, MD",
+            role=UserRole.CLINICIAN_REVIEWER.value,
+            cases=["*"],
+        )
+        token = create_access_token(dev_reviewer)
+        self.client.headers["Authorization"] = f"Bearer {token}"
+
     # 1. Fully supported criterion
     def test_scenario_01_fully_supported_packet(self):
         """SYN-P001 has complete, dated documentation; all criteria evaluate to MET and verified=True."""
@@ -269,9 +280,9 @@ class EndToEndWorkflowTests(unittest.TestCase):
         )
         self.assertEqual(resp.status_code, 422)
 
-    # 11. Development limitation on unauthenticated reviewer recorded
+    # 11. Authenticated reviewer identity recorded in audit trail
     def test_scenario_11_unauthenticated_reviewer_audit_logged(self):
-        """Audit events record the development limitation on unauthenticated reviewer identity."""
+        """Audit events record the verified authenticated reviewer identity in audit trail."""
         resp = self.client.post(
             "/api/v1/cases/CASE-SYN-001/review",
             json={
@@ -285,7 +296,9 @@ class EndToEndWorkflowTests(unittest.TestCase):
         self.assertEqual(packet_resp.status_code, 200)
         audits = packet_resp.json()["audit_events"]
         action_audit = next(a for a in audits if a["action"] == ReviewActionType.CUSTOM_NOTE.value)
-        self.assertIn("UNAUTHENTICATED_DEV", action_audit["actor"])
+        self.assertIn("Dr. Sarah Chen, MD", action_audit["actor"])
+        self.assertIn("REV-001", action_audit["actor"])
+        self.assertNotIn("UNAUTHENTICATED_DEV", action_audit["actor"])
 
     # 12. Concurrent row lock / state transition protection
     def test_scenario_12_concurrent_row_lock_protection(self):

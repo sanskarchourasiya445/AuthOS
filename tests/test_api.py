@@ -9,6 +9,8 @@ from contracts.schemas import (
     FinalizationActionType,
     ReviewActionType,
 )
+from backend.auth.schemas import AuthenticatedUser, UserRole
+from backend.auth.security import create_access_token
 from backend.api.v1.cases import get_repository
 from backend.db.models import (
     AuditLogModel,
@@ -50,6 +52,14 @@ class ApiContractTests(unittest.TestCase):
         self.app = create_app()
         self.app.dependency_overrides[get_repository] = lambda: self.repo
         self.client = TestClient(self.app)
+        dev_reviewer = AuthenticatedUser(
+            sub="REV-001",
+            name="Dr. Sarah Chen, MD",
+            role=UserRole.CLINICIAN_REVIEWER.value,
+            cases=["*"],
+        )
+        token = create_access_token(dev_reviewer)
+        self.client.headers["Authorization"] = f"Bearer {token}"
 
     def test_health_check(self):
         response = self.client.get("/api/v1/health")

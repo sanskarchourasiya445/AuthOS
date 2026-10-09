@@ -14,14 +14,16 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
-# Use DATABASE_URL from environment or fallback to application settings if not set
-if not config.get_main_option("sqlalchemy.url"):
-    db_url = os.getenv("DATABASE_URL", settings.database_url)
-    config.set_main_option("sqlalchemy.url", db_url)
+# Environment variable DATABASE_URL takes priority, then explicit config, then settings.database_url
+env_db_url = os.getenv("DATABASE_URL")
+if env_db_url:
+    config.set_main_option("sqlalchemy.url", env_db_url)
+elif not config.get_main_option("sqlalchemy.url"):
+    config.set_main_option("sqlalchemy.url", settings.database_url)
 
 
 def run_migrations_offline() -> None:
-    url = config.get_main_option("sqlalchemy.url")
+    url = config.get_main_option("sqlalchemy.url") or settings.database_url
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -35,7 +37,7 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     configuration = config.get_section(config.config_ini_section, {})
-    configuration["sqlalchemy.url"] = config.get_main_option("sqlalchemy.url") or db_url
+    configuration["sqlalchemy.url"] = config.get_main_option("sqlalchemy.url") or settings.database_url
     connectable = engine_from_config(
         configuration,
         prefix="sqlalchemy.",
