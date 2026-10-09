@@ -14,6 +14,18 @@
 - Every phase has: owner, tasks, deliverable, and an **exit check**. Do not move on until the exit check passes.
 - Every extension is **measured** in the ablation. If it does not help, report that honestly.
 
+### 0.1 Phase Definition & Lifecycle Mapping
+
+To reconcile project governance and engineering execution:
+- **Phase 0A: Pre-Development Audit & Planning Gate** (Documentation baseline, architecture discovery, product boundary checks, risk assessment, and pre-development readiness checklist). Status: `COMPLETE`.
+- **Phase 0B: Setup & Executable Contracts** (Pydantic v2 schemas as single source of truth in `contracts/schemas.py`, synthetic test fixtures in `contracts/mock_response.json`, minimal mock FastAPI `/api/v1` routes, and contract test suite). Status: `COMPLETE — VERIFICATION PASSED`.
+- **Phase 1: Data & Foundations** (PostgreSQL + pgvector schema, chunking, synthetic chart documents, base search). Status: `NOT STARTED`.
+- **Phase 2: Hybrid Retrieval & Deterministic Verifier Gates** (RRF search, citations, dates, evidence validators). Status: `NOT STARTED`.
+- **Phase 3: Agent Loop & Workflow** (LangGraph state machine, query rewrite, sufficiency check, bounded retries). Status: `NOT STARTED`.
+- **Phase 4: Integration, UI, & Human Review Station** (FastAPI service wiring, React review station UI, approval gate). Status: `NOT STARTED`.
+- **Phase 5: Evaluation & Ablation Suite** (Reproducible synthetic benchmark, whole-chart baseline comparison, metric reporting). Status: `NOT STARTED`.
+- **Phase 6+: Production Hardening, Security, & Deployment Operations** (Auth boundaries, containerization, audit logging, monitoring). Status: `NOT STARTED`.
+
 **Roles**
 
 | Person | Focus | Owns |
@@ -266,19 +278,19 @@ Each patient: 5–10 documents (primary care note, specialist note, PT evaluatio
 
 ## 7. Phased Build
 
-### PHASE 0 — Setup and Contracts (h0–1) · A + B together
+### PHASE 0 (0B) — Setup, Contracts, and Mock API (h0–1) · A + B together [COMPLETE]
 
 **Tasks**
-- [ ] Init repo, branch strategy (A: `backend/`, B: `frontend/` + `data/` + `validators/`)
-- [ ] docker-compose: Postgres + pgvector
-- [ ] `.env.example` (API keys, DB URL, embedding dim)
-- [ ] Write `contracts/schemas.py` from section 4
-- [ ] Write `contracts/mock_response.json` for all three cases
-- [ ] Mock FastAPI returning the mock payload
+- [x] Init repo, branch strategy (`main` initialized, pushed to remote)
+- [x] `.env.example` (API keys, DB URL, embedding dim)
+- [x] Write `contracts/schemas.py` from section 4 (Pydantic v2 source of truth)
+- [x] Write `contracts/mock_response.json` for all three cases (3 synthetic benchmark scenarios)
+- [x] Mock FastAPI returning the mock payload (`backend/main.py`, `backend/api/v1/cases.py`)
+- [ ] docker-compose: Postgres + pgvector (deferred to Phase 1 Data & Foundations)
 
 **Deliverable:** UI can be built against the mock API; backend knows its output shape.
 
-**Exit check:** `GET /cases/{id}/results` returns valid mock JSON validated by Pydantic.
+**Exit check:** `GET /api/v1/cases/{id}/results` returns valid mock JSON validated by Pydantic. Passed via automated tests in `tests/test_api.py`.
 
 ---
 

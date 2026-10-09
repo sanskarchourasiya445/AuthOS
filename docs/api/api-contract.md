@@ -1,6 +1,6 @@
 # AuthOS — API Contract (Proposed)
 
-**Status:** Draft contract derived from `system-architecture.md` and `PLAN.md`. No running API has been verified. Pydantic schemas should become the executable source of truth during implementation.
+**Status:** Executable contract established in `contracts/schemas.py` and implemented via `/api/v1` FastAPI endpoints (`backend/main.py`, `backend/api/v1/cases.py`) with automated contract test suite. Verified in Phase 0B.
 
 ## General rules
 

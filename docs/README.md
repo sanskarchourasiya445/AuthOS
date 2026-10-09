@@ -1,6 +1,6 @@
 # AuthOS Documentation Index
 
-**Status convention:** `Draft` means proposed and awaiting review; `Baseline` means the current working decision but still subject to validation; `Required before coding` marks a gate, not evidence that approval has occurred. The current project is at documentation/planning stage.
+**Status convention:** `Draft` means proposed and awaiting review; `Baseline` means the current working decision but still subject to validation. Current project state: Phase 0A (Audit & Readiness) and Phase 0B (Executable Contracts & Mock API) are `COMPLETE — VERIFICATION PASSED`. Phase 1 (Data & Foundations) is `NOT STARTED`.
 
 ## Product and UX
 
