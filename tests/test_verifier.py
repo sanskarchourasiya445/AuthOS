@@ -36,5 +36,26 @@ class VerifierTests(unittest.TestCase):
         self.assertFalse(packet["finalized"])
         self.assertTrue(packet["criteria"][0]["review_required"])
 
+    def test_rejects_empty_or_whitespace_quote(self):
+        result = verify_claim(
+            {"claim_id": "CL-5", "source_id": "SYN-P001-PT-02", "quote": "   "},
+            patient_id="SYN-P001",
+            source_documents=self.docs,
+        )
+        self.assertFalse(result.accepted)
+        self.assertIn("QUOTE_MISSING", result.reasons)
+
+    def test_rejects_subtle_date_fabrication_in_quote(self):
+        # Only one character difference ("July 2" instead of "July 1")
+        subtle_fake = "Patient completed supervised physical therapy from July 2 through August 20, 2026, with persistent symptoms."
+        result = verify_claim(
+            {"claim_id": "CL-6", "source_id": "SYN-P001-PT-02", "quote": subtle_fake},
+            patient_id="SYN-P001",
+            source_documents=self.docs,
+        )
+        self.assertFalse(result.accepted)
+        self.assertIn("QUOTE_NOT_VERBATIM", result.reasons)
+
+
 if __name__ == "__main__":
     unittest.main()

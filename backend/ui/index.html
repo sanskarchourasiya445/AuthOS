@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AuthOS — Evidence Reviewer Desk</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --success: #15803d;
+      --success-bg: #dcfce7;
+      --warning: #b45309;
+      --warning-bg: #fef3c7;
+      --danger: #b91c1c;
+      --danger-bg: #fee2e2;
+      --neutral-badge: #64748b;
+      --neutral-bg: #f1f5f9;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --radius: 8px;
+      --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+
+    .logo-area h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo-badge {
+      background: var(--primary);
+      color: white;
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .subtitle {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    .disclaimer-banner {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-left: 4px solid var(--primary);
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      margin-bottom: 24px;
+      font-size: 0.875rem;
+      color: #1e3a8a;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .controls-bar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      background: var(--card-bg);
+      padding: 16px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    select, input, textarea {
+      font-family: inherit;
+      font-size: 0.875rem;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: white;
+      color: var(--text);
+    }
+
+    select:focus, input:focus, textarea:focus {
+      outline: 2px solid var(--primary);
+      outline-offset: -1px;
+    }
+
+    button {
+      font-family: inherit;
+      font-size: 0.875rem;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s ease;
+    }
+
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-secondary { background: var(--neutral-bg); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: #e2e8f0; }
+    .btn-success { background: var(--success); color: white; }
+    .btn-success:hover { background: #166534; }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-danger:hover { background: #991b1b; }
+
+    .case-summary-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .summary-item .label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .summary-item .value {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .badge-MET { background: var(--success-bg); color: var(--success); }
+    .badge-AMBIGUOUS { background: var(--warning-bg); color: var(--warning); }
+    .badge-CONTRADICTED { background: var(--danger-bg); color: var(--danger); }
+    .badge-MISSING { background: var(--neutral-bg); color: var(--neutral-badge); }
+    .badge-FINALIZED { background: var(--success-bg); color: var(--success); }
+    .badge-DRAFT { background: var(--warning-bg); color: var(--warning); }
+    .badge-REJECTED { background: var(--danger-bg); color: var(--danger); }
+
+    .section-title {
+      font-size: 1.125rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .criteria-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .criterion-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .criterion-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .criterion-id-title {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .criterion-id-badge {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .criterion-title {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .reason-box {
+      font-size: 0.875rem;
+      color: #334155;
+      background: #f8fafc;
+      border-left: 3px solid #cbd5e1;
+      padding: 8px 12px;
+      border-radius: 4px;
+    }
+
+    .evidence-section {
+      margin-top: 8px;
+    }
+
+    .evidence-section h4 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .evidence-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .evidence-item {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 0.875rem;
+    }
+
+    .evidence-item.contradicting {
+      border-color: #fca5a5;
+      background: #fff1f2;
+    }
+
+    .evidence-meta {
+      display: flex;
+      gap: 12px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+      flex-wrap: wrap;
+    }
+
+    .meta-tag {
+      background: #e2e8f0;
+      padding: 1px 6px;
+      border-radius: 4px;
+      color: #334155;
+    }
+
+    .missing-facts-box {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 0.875rem;
+      color: #92400e;
+    }
+
+    .criterion-action-row {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px dashed var(--border);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .finalization-desk {
+      background: var(--card-bg);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 32px;
+      box-shadow: var(--shadow);
+    }
+
+    .desk-form {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .audit-trail {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      margin-bottom: 32px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      margin-top: 12px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      background: #f8fafc;
+    }
+
+    .mono { font-family: var(--font-mono); }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #1e293b;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+      display: none;
+      z-index: 1000;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="logo-area">
+        <h1>AuthOS <span class="logo-badge">PRE-SUBMISSION EVIDENCE LINTER</span></h1>
+        <div class="subtitle">Provider-Side Evidence Provenance Verification & Human Review Workflow</div>
+      </div>
+      <div>
+        <span class="mono" style="font-size: 0.75rem; color: var(--text-muted);">Deterministic Engine v1.0</span>
+      </div>
+    </header>
+
+    <div class="disclaimer-banner">
+      <div style="font-size: 1.25rem;">⚖️</div>
+      <div>
+        <strong>Human-in-the-Loop Review Gate:</strong> AuthOS is a clinical documentation aid for prior-authorization preparation. It does not determine medical necessity, predict insurer approval, or submit requests. Final decision authority resides solely with the human reviewer.
+      </div>
+    </div>
+
+    <!-- Controls Bar -->
+    <div class="controls-bar">
+      <div class="control-group">
+        <label for="caseSelect">Synthetic Case:</label>
+        <select id="caseSelect" onchange="loadCase()">
+          <option value="CASE-SYN-001">CASE-SYN-001 (Sufficient Evidence / SYN-P001)</option>
+          <option value="CASE-SYN-002">CASE-SYN-002 (Incomplete PT Duration / SYN-P002)</option>
+          <option value="CASE-SYN-003">CASE-SYN-003 (Explicit PT Contradiction / SYN-P003)</option>
+        </select>
+      </div>
+
+      <button class="btn-primary" onclick="triggerEvaluate()">
+        ⚡ Run Deterministic Evaluation
+      </button>
+
+      <button class="btn-secondary" onclick="loadCase()">
+        🔄 Refresh
+      </button>
+    </div>
+
+    <!-- Case Summary -->
+    <div class="case-summary-card" id="caseSummary">
+      <div class="summary-item">
+        <div class="label">Case ID</div>
+        <div class="value mono" id="sumCaseId">-</div>
+      </div>
+      <div class="summary-item">
+        <div class="label">Patient</div>
+        <div class="value mono" id="sumPatientId">-</div>
+      </div>
+      <div class="summary-item">
+        <div class="label">Requested Service</div>
+        <div class="value" id="sumService">-</div>
+      </div>
+      <div class="summary-item">
+        <div class="label">Policy ID</div>
+        <div class="value mono" id="sumPolicy">-</div>
+      </div>
+      <div class="summary-item">
+        <div class="label">Workflow State</div>
+        <div class="value" id="sumStatus">-</div>
+      </div>
+      <div class="summary-item">
+        <div class="label">Packet Finalized</div>
+        <div class="value" id="sumFinalized">-</div>
+      </div>
+    </div>
+
+    <!-- Policy Criteria & Evidence Linter Results -->
+    <div class="section-title">
+      <span>📋 Policy Criteria & Provenance Verification</span>
+    </div>
+    <div class="criteria-grid" id="criteriaGrid">
+      <p style="color: var(--text-muted); font-size: 0.875rem;">Loading criteria...</p>
+    </div>
+
+    <!-- Finalization Desk -->
+    <div class="finalization-desk">
+      <div class="section-title">
+        <span>✍️ Final Reviewer Adjudication Desk</span>
+      </div>
+      <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 12px;">
+        As the licensed clinician reviewer, record your formal packet determination. Approval requires that all policy criteria are substantiated or clinical exceptions documented.
+      </p>
+      <div class="desk-form">
+        <div>
+          <label for="finalAction">Determination Action:</label>
+          <select id="finalAction" style="width: 100%; margin-top: 4px;">
+            <option value="approve_packet">Approve Packet for Clinician Signature (APPROVE_PACKET)</option>
+            <option value="request_edits">Request Additional Clinical Records (REQUEST_EDITS)</option>
+            <option value="reject_packet">Reject Authorization Packet (REJECT_PACKET)</option>
+          </select>
+        </div>
+        <div>
+          <label for="finalNote">Reviewer Clinical Rationale / Note (Mandatory):</label>
+          <textarea id="finalNote" rows="3" style="width: 100%; margin-top: 4px;" placeholder="Document clinical review findings, record gaps, or rationale for packet disposition..."></textarea>
+        </div>
+        <div>
+          <button class="btn-success" onclick="submitFinalization()">
+            💾 Commit Final Determination
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Audit Trail -->
+    <div class="audit-trail">
+      <div class="section-title">
+        <span>📜 Chronological Audit Trail</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Actor</th>
+            <th>Action</th>
+            <th>Criterion</th>
+            <th>Clinical Note / Details</th>
+          </tr>
+        </thead>
+        <tbody id="auditTableBody">
+          <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No audit records found.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">Action recorded successfully.</div>
+
+  <script>
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.innerText = msg;
+      t.style.display = 'block';
+      setTimeout(() => { t.style.display = 'none'; }, 3500);
+    }
+
+    async function loadCase() {
+      const caseId = document.getElementById('caseSelect').value;
+      try {
+        const caseRes = await fetch(`/api/v1/cases/${caseId}`);
+        const caseData = await caseRes.json();
+
+        // Load packet preview
+        const packetRes = await fetch(`/api/v1/cases/${caseId}/packet?preview=true`);
+        const packetData = await packetRes.json();
+
+        renderSummary(caseData, packetData);
+        renderCriteria(packetData.criteria || []);
+        renderAudit(packetData.audit_events || []);
+      } catch (err) {
+        console.error("Error loading case:", err);
+        showToast("Error loading case: " + err.message);
+      }
+    }
+
+    function renderSummary(caseData, packetData) {
+      document.getElementById('sumCaseId').innerText = caseData.case_id || '-';
+      document.getElementById('sumPatientId').innerText = caseData.patient_id || '-';
+      document.getElementById('sumService').innerText = caseData.service || '-';
+      document.getElementById('sumPolicy').innerText = caseData.policy_id || '-';
+      document.getElementById('sumStatus').innerHTML = `<span class="badge badge-${caseData.status}">${caseData.status}</span>`;
+      
+      const fin = packetData.finalized;
+      document.getElementById('sumFinalized').innerHTML = fin 
+        ? `<span class="badge badge-FINALIZED">FINALIZED</span>` 
+        : `<span class="badge badge-DRAFT">DRAFT / PENDING</span>`;
+    }
+
+    function renderCriteria(criteria) {
+      const container = document.getElementById('criteriaGrid');
+      if (!criteria.length) {
+        container.innerHTML = '<p style="color: var(--text-muted);">No criteria results evaluated yet. Click "Run Deterministic Evaluation".</p>';
+        return;
+      }
+
+      container.innerHTML = criteria.map(c => {
+        const evidenceHtml = (c.evidence || []).map(e => `
+          <div class="evidence-item">
+            <div><em>"${escapeHtml(e.quote)}"</em></div>
+            <div class="evidence-meta">
+              <span class="meta-tag">Source: ${escapeHtml(e.source_id)}</span>
+              <span class="meta-tag">Offsets: [${e.char_start}:${e.char_end}]</span>
+              <span class="meta-tag">Date: ${escapeHtml(e.document_date || 'N/A')}</span>
+              <span class="meta-tag">Polarity: ${e.polarity}</span>
+            </div>
+          </div>
+        `).join('');
+
+        const conflictHtml = (c.conflicting_evidence || []).map(e => `
+          <div class="evidence-item contradicting">
+            <div style="font-weight: 600; color: var(--danger); margin-bottom: 4px;">⚠️ Conflicting Chart Record:</div>
+            <div><em>"${escapeHtml(e.quote)}"</em></div>
+            <div class="evidence-meta">
+              <span class="meta-tag">Source: ${escapeHtml(e.source_id)}</span>
+              <span class="meta-tag">Offsets: [${e.char_start}:${e.char_end}]</span>
+              <span class="meta-tag">Date: ${escapeHtml(e.document_date || 'N/A')}</span>
+            </div>
+          </div>
+        `).join('');
+
+        const missingHtml = (c.missing_facts && c.missing_facts.length) ? `
+          <div class="missing-facts-box">
+            <strong>Documentation Gaps Identified:</strong>
+            <ul style="margin-left: 20px; margin-top: 4px;">
+              ${c.missing_facts.map(f => `<li>${escapeHtml(f)}</li>`).join('')}
+            </ul>
+          </div>
+        ` : '';
+
+        return `
+          <div class="criterion-card">
+            <div class="criterion-header">
+              <div class="criterion-id-title">
+                <span class="criterion-id-badge">${c.criterion_id}</span>
+                <span class="criterion-title">${escapeHtml(c.criterion)}</span>
+              </div>
+              <div>
+                <span class="badge badge-${c.status}">${c.status}</span>
+              </div>
+            </div>
+
+            <div class="reason-box">
+              <strong>Assessment:</strong> ${escapeHtml(c.reason || 'No details')}
+            </div>
+
+            ${missingHtml}
+
+            ${conflictHtml ? `
+              <div class="evidence-section">
+                <h4>Conflicting / Negating Evidence</h4>
+                <div class="evidence-list">${conflictHtml}</div>
+              </div>
+            ` : ''}
+
+            <div class="evidence-section">
+              <h4>Supporting Evidence (${(c.evidence || []).length} cited)</h4>
+              <div class="evidence-list">${evidenceHtml || '<p style="color: var(--text-muted); font-size: 0.8125rem;">No supporting evidence retrieved.</p>'}</div>
+            </div>
+
+            <div class="criterion-action-row">
+              <span style="font-size: 0.8125rem; font-weight: 600; color: var(--text-muted);">Annotate Criterion:</span>
+              <select id="action_${c.criterion_id}" style="font-size: 0.8125rem;">
+                <option value="request_information">Request Additional Records (REQUEST_INFORMATION)</option>
+                <option value="accept_gap">Accept Documentation Gap (ACCEPT_GAP)</option>
+                <option value="flag_contradiction">Flag Contradiction (FLAG_CONTRADICTION)</option>
+                <option value="custom_note">Reviewer Clinical Note (CUSTOM_NOTE)</option>
+              </select>
+              <input type="text" id="note_${c.criterion_id}" placeholder="Reviewer rationale..." style="flex: 1; min-width: 200px; font-size: 0.8125rem;">
+              <button class="btn-secondary" style="font-size: 0.8125rem;" onclick="submitCriterionAction('${c.criterion_id}')">
+                Save Annotation
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderAudit(audits) {
+      const tbody = document.getElementById('auditTableBody');
+      if (!audits.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No audit records found.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = audits.map(a => `
+        <tr>
+          <td class="mono" style="font-size: 0.75rem;">${escapeHtml(a.created_at || '-')}</td>
+          <td style="font-weight: 600;">${escapeHtml(a.actor || 'SYSTEM')}</td>
+          <td><span class="mono">${escapeHtml(a.action)}</span></td>
+          <td class="mono">${escapeHtml(a.criterion_id || 'ALL')}</td>
+          <td>${escapeHtml(a.note || '-')}</td>
+        </tr>
+      `).join('');
+    }
+
+    async function triggerEvaluate() {
+      const caseId = document.getElementById('caseSelect').value;
+      try {
+        const res = await fetch(`/api/v1/cases/${caseId}/evaluate`, { method: 'POST' });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail?.message || err.detail || 'Evaluation failed');
+        }
+        showToast("Deterministic evaluation completed.");
+        await loadCase();
+      } catch (err) {
+        alert("Evaluation failed: " + err.message);
+      }
+    }
+
+    async function submitCriterionAction(critId) {
+      const caseId = document.getElementById('caseSelect').value;
+      const action = document.getElementById(`action_${critId}`).value;
+      const note = document.getElementById(`note_${critId}`).value.trim();
+
+      if (!note) {
+        alert("Reviewer note is required for auditable criterion annotation.");
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/v1/cases/${caseId}/review`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            criterion_id: critId,
+            action: action,
+            note: note
+          })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail?.message || err.detail || 'Failed to save review action');
+        }
+
+        document.getElementById(`note_${critId}`).value = '';
+        showToast("Criterion annotation saved to audit trail.");
+        await loadCase();
+      } catch (err) {
+        alert("Error saving review action: " + err.message);
+      }
+    }
+
+    async function submitFinalization() {
+      const caseId = document.getElementById('caseSelect').value;
+      const action = document.getElementById('finalAction').value;
+      const note = document.getElementById('finalNote').value.trim();
+
+      if (!note) {
+        alert("A clinical note is mandatory when finalizing, rejecting, or requesting edits on a packet.");
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/v1/cases/${caseId}/approve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: action,
+            reviewer_note: note
+          })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail?.message || err.detail || 'Finalization failed');
+        }
+
+        document.getElementById('finalNote').value = '';
+        showToast("Final determination recorded successfully.");
+        await loadCase();
+      } catch (err) {
+        alert("Finalization failed: " + err.message);
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Initial load
+    window.addEventListener('DOMContentLoaded', loadCase);
+  </script>
+</body>
+</html>

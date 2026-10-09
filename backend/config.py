@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     app_env: str = "development"
     api_prefix: str = "/api/v1"
     max_retrieval_retries: int = 2
+    database_url: str = "postgresql+psycopg2://authos@localhost:5433/authos"
 
 
 settings = Settings()

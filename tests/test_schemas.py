@@ -193,15 +193,34 @@ class SchemaContractTests(unittest.TestCase):
         self.assertEqual(packet.packet_type, "SYNTHETIC_DEMO_REVIEW_PACKET")
         self.assertFalse(packet.finalized)
 
-    def test_error_envelope_validation(self):
-        envelope = ErrorEnvelope(
-            error=ErrorDetail(
-                code=ErrorCode.CASE_NOT_FOUND,
-                message="Case CASE-999 was not found.",
-                request_id="req-123",
+    def test_empty_strings_rejected_on_evidence_item(self):
+        with self.assertRaises(ValidationError):
+            EvidenceItem(
+                source_id="",  # min_length=1
+                patient_id="SYN-P001",
+                quote="Some quote",
             )
+        with self.assertRaises(ValidationError):
+            EvidenceItem(
+                source_id="SOURCE-1",
+                patient_id="SYN-P001",
+                quote="",  # min_length=1
+            )
+
+    def test_invalid_status_enum_rejected(self):
+        ev = EvidenceItem(
+            source_id="SYN-P001-PT-02",
+            patient_id="SYN-P001",
+            quote="Patient completed supervised physical therapy.",
+            document_date="2026-09-15",
         )
-        self.assertEqual(envelope.error.code, ErrorCode.CASE_NOT_FOUND)
+        with self.assertRaises(ValidationError):
+            CriterionResult(
+                criterion_id="C2",
+                status="APPROVED",  # Not a valid CriterionStatus enum
+                verified=True,
+                evidence=[ev],
+            )
 
 
 if __name__ == "__main__":

@@ -1,11 +1,9 @@
-"""Case and review endpoints for /api/v1."""
-import json
-from datetime import datetime, timezone
-from pathlib import Path
+"""Case and review endpoints for /api/v1 backed by PostgreSQL persistence."""
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
+from backend.db.repository import PostgresCaseRepository
 from contracts.schemas import (
     Case,
     CaseResultsResponse,
@@ -18,98 +16,10 @@ from contracts.schemas import (
 
 router = APIRouter()
 
-FIXTURES_PATH = Path(__file__).resolve().parents[3] / "contracts" / "mock_response.json"
 
-
-class MockCaseRepository:
-    """In-memory mock store initialized from contracts/mock_response.json.
-
-    This provides a deterministic, hermetic repository for Phase 0 contract validation
-    without introducing a premature database dependency.
-    """
-
-    def __init__(self, path: Path):
-        self._path = path
-        self._load()
-
-    def _load(self):
-        data = json.loads(self._path.read_text(encoding="utf-8"))
-        self.cases: dict[str, Case] = {
-            c["case_id"]: Case.model_validate(c) for c in data.get("cases", [])
-        }
-        self.results: dict[str, CaseResultsResponse] = {
-            k: CaseResultsResponse.model_validate(v)
-            for k, v in data.get("results_by_case", {}).items()
-        }
-        self.packets: dict[str, ReviewPacket] = {
-            k: ReviewPacket.model_validate(v)
-            for k, v in data.get("packets_by_case", {}).items()
-        }
-        self.reviews: list[ReviewActionResponse] = []
-
-    def get_all_cases(self) -> list[Case]:
-        return list(self.cases.values())
-
-    def get_case(self, case_id: str) -> Case | None:
-        return self.cases.get(case_id)
-
-    def get_results(self, case_id: str) -> CaseResultsResponse | None:
-        return self.results.get(case_id)
-
-    def record_review(self, case_id: str, request: ReviewActionRequest) -> ReviewActionResponse:
-        record = ReviewActionResponse(
-            case_id=case_id,
-            criterion_id=request.criterion_id,
-            action=request.action,
-            note=request.note,
-            recorded_at=datetime.now(timezone.utc).isoformat(),
-        )
-        self.reviews.append(record)
-        return record
-
-    def get_packet(self, case_id: str) -> ReviewPacket | None:
-        if case_id in self.packets:
-            return self.packets[case_id]
-        results = self.results.get(case_id)
-        if not results:
-            return None
-        # Synthesize an unfinalized packet from existing results
-        from contracts.schemas import PacketCriterionRow
-        rows = [
-            PacketCriterionRow(
-                criterion_id=r.criterion_id,
-                criterion=f"Policy requirement {r.criterion_id}",
-                status=r.status,
-                evidence=r.evidence,
-                reason=r.reason or "",
-                review_required=(r.status.value != "MET"),
-            )
-            for r in results.criteria_results
-        ]
-        packet = ReviewPacket(
-            case_id=case_id,
-            patient_id=results.patient_id,
-            packet_type="SYNTHETIC_DEMO_REVIEW_PACKET",
-            decision_authority="HUMAN_REVIEWER",
-            criteria=rows,
-            disclaimer="Preparation aid only. Not a medical-necessity or coverage decision.",
-            finalized=False,
-        )
-        self.packets[case_id] = packet
-        return packet
-
-    def finalize_packet(self, case_id: str, request: FinalizationActionRequest) -> ReviewPacket:
-        packet = self.get_packet(case_id)
-        if not packet:
-            raise KeyError(case_id)
-        packet.finalized = True
-        packet.finalized_at = datetime.now(timezone.utc).isoformat()
-        packet.reviewer_note = request.reviewer_note
-        self.packets[case_id] = packet
-        return packet
-
-
-repo = MockCaseRepository(FIXTURES_PATH)
+def get_repository() -> PostgresCaseRepository:
+    """Dependency provider for case repository."""
+    return PostgresCaseRepository()
 
 
 @router.get(
@@ -126,7 +36,9 @@ def get_health() -> dict[str, str]:
     summary="List synthetic demo cases",
     response_model=list[Case],
 )
-def list_cases() -> list[Case]:
+def list_cases(
+    repo: Annotated[PostgresCaseRepository, Depends(get_repository)],
+) -> list[Case]:
     return repo.get_all_cases()
 
 
@@ -135,7 +47,10 @@ def list_cases() -> list[Case]:
     summary="Get case details",
     response_model=Case,
 )
-def get_case(case_id: str) -> Case:
+def get_case(
+    case_id: str,
+    repo: Annotated[PostgresCaseRepository, Depends(get_repository)],
+) -> Case:
     case = repo.get_case(case_id)
     if not case:
         raise HTTPException(
@@ -150,7 +65,10 @@ def get_case(case_id: str) -> Case:
     summary="Get criterion results and retry history for a case",
     response_model=CaseResultsResponse,
 )
-def get_case_results(case_id: str) -> CaseResultsResponse:
+def get_case_results(
+    case_id: str,
+    repo: Annotated[PostgresCaseRepository, Depends(get_repository)],
+) -> CaseResultsResponse:
     results = repo.get_results(case_id)
     if not results:
         raise HTTPException(
@@ -165,13 +83,11 @@ def get_case_results(case_id: str) -> CaseResultsResponse:
     summary="Record reviewer annotation or gap disposition",
     response_model=ReviewActionResponse,
 )
-def submit_review_action(case_id: str, request: ReviewActionRequest) -> ReviewActionResponse:
-    case = repo.get_case(case_id)
-    if not case:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": ErrorCode.CASE_NOT_FOUND.value, "message": f"Case '{case_id}' was not found."},
-        )
+def submit_review_action(
+    case_id: str,
+    request: ReviewActionRequest,
+    repo: Annotated[PostgresCaseRepository, Depends(get_repository)],
+) -> ReviewActionResponse:
     return repo.record_review(case_id, request)
 
 
@@ -180,13 +96,11 @@ def submit_review_action(case_id: str, request: ReviewActionRequest) -> ReviewAc
     summary="Submit finalization decision (approve, request edits, or reject)",
     response_model=ReviewPacket,
 )
-def approve_packet(case_id: str, request: FinalizationActionRequest) -> ReviewPacket:
-    case = repo.get_case(case_id)
-    if not case:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": ErrorCode.CASE_NOT_FOUND.value, "message": f"Case '{case_id}' was not found."},
-        )
+def approve_packet(
+    case_id: str,
+    request: FinalizationActionRequest,
+    repo: Annotated[PostgresCaseRepository, Depends(get_repository)],
+) -> ReviewPacket:
     return repo.finalize_packet(case_id, request)
 
 
@@ -197,6 +111,7 @@ def approve_packet(case_id: str, request: FinalizationActionRequest) -> ReviewPa
 )
 def get_review_packet(
     case_id: str,
+    repo: Annotated[PostgresCaseRepository, Depends(get_repository)],
     preview: Annotated[bool, Query(description="Allow retrieving unfinalized draft packet")] = False,
 ) -> ReviewPacket:
     case = repo.get_case(case_id)
@@ -220,3 +135,32 @@ def get_review_packet(
             },
         )
     return packet
+
+
+@router.post(
+    "/cases/{case_id}/evaluate",
+    summary="Trigger deterministic retrieval and evidence verification for a case",
+    response_model=ReviewPacket,
+)
+def evaluate_case_endpoint(
+    case_id: str,
+    repo: Annotated[PostgresCaseRepository, Depends(get_repository)],
+) -> ReviewPacket:
+    case = repo.get_case(case_id)
+    if not case:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": ErrorCode.CASE_NOT_FOUND.value, "message": f"Case '{case_id}' was not found."},
+        )
+    with repo._session_factory() as session:
+        try:
+            from backend.workflow.evaluator import evaluate_case
+            packet = evaluate_case(case_id, session)
+            session.commit()
+            return packet
+        except Exception as e:
+            session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail={"code": "EVALUATION_ERROR", "message": str(e)},
+            )

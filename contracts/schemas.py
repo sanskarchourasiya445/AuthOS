@@ -10,7 +10,7 @@ All schemas follow strict validation policies:
   * Absence of evidence cannot produce a positive status.
 """
 from enum import Enum
-from typing import Annotated
+from typing import Annotated, Any
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
@@ -68,6 +68,13 @@ class SchemaBase(BaseModel):
     )
 
 
+class EvidencePolarity(str, Enum):
+    """Polarity of a cited evidence passage relative to the criterion claim."""
+    SUPPORTING = "SUPPORTING"
+    CONTRADICTING = "CONTRADICTING"
+    UNCLEAR = "UNCLEAR"
+
+
 class EvidenceItem(SchemaBase):
     """A traceable excerpt cited as supporting, ambiguous, or contradictory evidence."""
     source_id: Annotated[str, Field(min_length=1, description="Identifier of the source document in the patient chart")]
@@ -75,6 +82,10 @@ class EvidenceItem(SchemaBase):
     quote: Annotated[str, Field(min_length=1, description="Verbatim text quote from the source document")]
     document_date: Annotated[str | None, Field(default=None, description="ISO-formatted document date, if available")] = None
     retrieval_round: Annotated[int, Field(default=1, ge=1, le=5, description="Search round in which this evidence was retrieved")] = 1
+    chunk_id: str | None = Field(default=None, description="Persisted chunk identifier, if applicable")
+    char_start: int | None = Field(default=None, ge=0, description="Exact start character offset in raw document")
+    char_end: int | None = Field(default=None, ge=0, description="Exact end character offset in raw document")
+    polarity: EvidencePolarity = Field(default=EvidencePolarity.SUPPORTING, description="Evidence polarity relative to the claim")
 
 
 class RetryLogEntry(SchemaBase):
@@ -107,6 +118,10 @@ class CriterionResult(SchemaBase):
     retry_log: list[RetryLogEntry] = Field(default_factory=list, description="History of retrieval and sufficiency evaluation rounds")
     validator_flags: list[str] = Field(default_factory=list, description="Diagnostic flags raised by deterministic validators")
     reason: str | None = Field(default=None, description="Human-readable explanation of status and evidence disposition")
+    criterion_text: str | None = Field(default=None, description="Policy text of the evaluated criterion")
+    verification_version: str = Field(default="deterministic-v1", description="Version of the verification engine applied")
+    conflicting_evidence: list[EvidenceItem] = Field(default_factory=list, description="Evidence items that conflict with the claim")
+    review_required: bool = Field(default=True, description="Whether human reviewer adjudication is required")
 
     @model_validator(mode="after")
     def validate_status_and_verification_rules(self) -> "CriterionResult":
@@ -116,11 +131,17 @@ class CriterionResult(SchemaBase):
                 raise ValueError("A MET criterion result must have verified=True")
             if not self.evidence:
                 raise ValueError("A MET criterion result must have at least one supporting evidence item")
+            if any(e.polarity != EvidencePolarity.SUPPORTING for e in self.evidence):
+                raise ValueError("A MET criterion result cannot cite non-supporting evidence")
             if self.missing_facts:
                 raise ValueError("A MET criterion result cannot have missing_facts")
+            if self.conflicting_evidence:
+                raise ValueError("A MET criterion result cannot have unresolved conflicting_evidence")
         else:
             if self.verified:
                 raise ValueError("A non-MET criterion result must have verified=False")
+            if not self.review_required:
+                raise ValueError("Every non-MET criterion result must require human review (review_required=True)")
         return self
 
 
@@ -152,6 +173,10 @@ class PacketCriterionRow(SchemaBase):
     criterion: str
     status: CriterionStatus
     evidence: list[EvidenceItem] = Field(default_factory=list)
+    conflicting_evidence: list[EvidenceItem] = Field(default_factory=list)
+    missing_facts: list[str] = Field(default_factory=list)
+    validator_flags: list[str] = Field(default_factory=list)
+    verification_version: str = "deterministic-v1"
     reason: str = ""
     review_required: bool = True
 
@@ -160,6 +185,7 @@ class ReviewPacket(SchemaBase):
     """Auditable review packet prepared for human review and finalization."""
     case_id: str
     patient_id: str
+    policy_id: str | None = None
     packet_type: str = "SYNTHETIC_DEMO_REVIEW_PACKET"
     decision_authority: str = "HUMAN_REVIEWER"
     criteria: list[PacketCriterionRow] = Field(default_factory=list)
@@ -167,6 +193,8 @@ class ReviewPacket(SchemaBase):
     finalized: bool = False
     finalized_at: str | None = None
     reviewer_note: str | None = None
+    generated_at: str | None = None
+    audit_events: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class Case(SchemaBase):

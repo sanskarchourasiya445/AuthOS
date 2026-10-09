@@ -58,6 +58,9 @@ def create_app() -> FastAPI:
             content=envelope.model_dump(),
         )
 
+    from backend.ui.router import ui_router
+
+    app.include_router(ui_router)
     app.include_router(api_v1_router, prefix=settings.api_prefix)
     return app
 

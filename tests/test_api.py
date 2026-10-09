@@ -9,11 +9,46 @@ from contracts.schemas import (
     FinalizationActionType,
     ReviewActionType,
 )
+from backend.api.v1.cases import get_repository
+from backend.db.models import (
+    AuditLogModel,
+    Base,
+    CaseModel,
+    CriterionResultModel,
+    DocumentModel,
+    PolicyCriterionModel,
+    PolicyModel,
+)
+from backend.db.repository import PostgresCaseRepository
+from backend.db.seed import seed_synthetic_data
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+TEST_DB_URL = "postgresql+psycopg2://authos@localhost:5433/authos_test"
+test_engine = create_engine(TEST_DB_URL, pool_pre_ping=True)
+TestSession = sessionmaker(bind=test_engine, autocommit=False, autoflush=False)
 
 
 class ApiContractTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        Base.metadata.create_all(bind=test_engine)
+
     def setUp(self):
+        with TestSession() as session:
+            session.query(AuditLogModel).delete()
+            session.query(CriterionResultModel).delete()
+            session.query(CaseModel).delete()
+            session.query(DocumentModel).delete()
+            session.query(PolicyCriterionModel).delete()
+            session.query(PolicyModel).delete()
+            session.commit()
+            seed_synthetic_data(session)
+            session.commit()
+
+        self.repo = PostgresCaseRepository(session_factory=TestSession)
         self.app = create_app()
+        self.app.dependency_overrides[get_repository] = lambda: self.repo
         self.client = TestClient(self.app)
 
     def test_health_check(self):
@@ -127,6 +162,63 @@ class ApiContractTests(unittest.TestCase):
         response_after = self.client.get("/api/v1/cases/CASE-SYN-001/packet")
         self.assertEqual(response_after.status_code, 200)
         self.assertTrue(response_after.json()["finalized"])
+
+    def test_post_review_action_unknown_criterion_fails(self):
+        payload = {
+            "criterion_id": "C999",
+            "action": ReviewActionType.REQUEST_INFORMATION.value,
+            "note": "Unknown criterion.",
+        }
+        response = self.client.post("/api/v1/cases/CASE-SYN-002/review", json=payload)
+        self.assertEqual(response.status_code, 404)
+        body = response.json()
+        self.assertEqual(body["error"]["code"], ErrorCode.VALIDATION_ERROR.value)
+
+    def test_post_review_action_on_finalized_case_fails(self):
+        # Finalize CASE-SYN-001 first
+        self.client.post(
+            "/api/v1/cases/CASE-SYN-001/approve",
+            json={"action": FinalizationActionType.APPROVE_PACKET.value, "reviewer_note": "Approved."},
+        )
+        # Attempt to add review action to now-finalized case
+        response = self.client.post(
+            "/api/v1/cases/CASE-SYN-001/review",
+            json={
+                "criterion_id": "C1",
+                "action": ReviewActionType.REQUEST_INFORMATION.value,
+                "note": "Late note.",
+            },
+        )
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.json()["error"]["code"], ErrorCode.INVALID_STATE_TRANSITION.value)
+
+    def test_repeated_approval_fails(self):
+        approve_payload = {
+            "action": FinalizationActionType.APPROVE_PACKET.value,
+            "reviewer_note": "Initial approval.",
+        }
+        res1 = self.client.post("/api/v1/cases/CASE-SYN-001/approve", json=approve_payload)
+        self.assertEqual(res1.status_code, 200)
+
+        # Second approval attempt should return 409 INVALID_STATE_TRANSITION
+        res2 = self.client.post("/api/v1/cases/CASE-SYN-001/approve", json=approve_payload)
+        self.assertEqual(res2.status_code, 409)
+        self.assertEqual(res2.json()["error"]["code"], ErrorCode.INVALID_STATE_TRANSITION.value)
+
+    def test_reject_packet_does_not_finalize(self):
+        reject_payload = {
+            "action": FinalizationActionType.REJECT_PACKET.value,
+            "reviewer_note": "Documentation completely inadequate.",
+        }
+        res = self.client.post("/api/v1/cases/CASE-SYN-003/approve", json=reject_payload)
+        self.assertEqual(res.status_code, 200)
+        packet = res.json()
+        self.assertFalse(packet["finalized"])
+        self.assertIn("REJECTED", packet["reviewer_note"])
+
+        # Case status should now be REJECTED
+        case_res = self.client.get("/api/v1/cases/CASE-SYN-003")
+        self.assertEqual(case_res.json()["status"], "REJECTED")
 
 
 if __name__ == "__main__":
