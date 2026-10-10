@@ -6,8 +6,8 @@
 > **NOT** clinical efficacy, medical necessity decisions, or real-world prior-authorization approval accuracy.
 
 - **Dataset Version:** `eval-dataset-v1.0`
-- **Execution Timestamp:** `2026-10-10T09:27:15.530090+00:00`
-- **Git Commit:** `1beb824ed86012c668b5b50e22ef16ea2200581d` (Branch: `main`, Dirty: `true`)
+- **Execution Timestamp:** `2026-10-10T09:45:48.792460+00:00`
+- **Git Commit:** `6ca53c55f52ab5cb7ce331814683b5d7ff0bf854` (Branch: `main`, Dirty: `true`)
 - **Environment:** `Windows-11-10.0.26300-SP0`, Python `3.13.1`
 
 ## 1. Executive Summary & Mandatory Safety Gates
@@ -76,12 +76,12 @@ Evaluated across `10` synthetic queries at `k=3`:
 
 | Retrieval Method | Precision@k | Recall@k | MRR | Empty-Result Rate (Safety) | Irrelevant Cand. Rate | Mean Latency | Median Latency | Safety Verdict |
 |---|---|---|---|---|---|---|---|---|
-| **BM25 (Baseline)** | 0.5476 | 0.8571 | 0.7619 | 3/3 (100.0%) | 0.0% | 0.99 ms | 0.84 ms | ✅ PASS |
-| **BM25 (Bounded Corrective)** | 0.6190 | 1.0000 | 0.9048 | 3/3 (100.0%) | 0.0% | 1.01 ms | 0.86 ms | ✅ PASS |
-| **Dense (Raw Cosine)** | 0.3809 | 1.0000 | 1.0000 | 0/3 (0.0%) | 100.0% | 53.14 ms | 34.08 ms | ❌ FAIL |
-| **Dense (Calibrated min_score=0.70)** | 0.7619 | 0.8571 | 0.8571 | 3/3 (100.0%) | 0.0% | 39.16 ms | 35.55 ms | ✅ PASS |
-| **Hybrid (BM25 + Dense RRF)** | 0.3809 | 1.0000 | 0.9286 | 0/3 (0.0%) | 100.0% | 34.44 ms | 34.49 ms | ❌ FAIL |
-| **Hybrid (Calibrated BM25 + Dense RRF)** | 0.5476 | 0.8571 | 0.7857 | 3/3 (100.0%) | 0.0% | 34.35 ms | 34.41 ms | ✅ PASS |
+| **BM25 (Baseline)** | 0.5476 | 0.8571 | 0.7619 | 3/3 (100.0%) | 0.0% | 0.83 ms | 0.73 ms | ✅ PASS |
+| **BM25 (Bounded Corrective)** | 0.6190 | 1.0000 | 0.9048 | 3/3 (100.0%) | 0.0% | 0.87 ms | 0.79 ms | ✅ PASS |
+| **Dense (Raw Cosine)** | 0.3809 | 1.0000 | 1.0000 | 0/3 (0.0%) | 100.0% | 60.2 ms | 37.93 ms | ❌ FAIL |
+| **Dense (Calibrated min_score=0.70)** | 0.7619 | 0.8571 | 0.8571 | 3/3 (100.0%) | 0.0% | 34.19 ms | 33.63 ms | ✅ PASS |
+| **Hybrid (BM25 + Dense RRF)** | 0.3809 | 1.0000 | 0.9286 | 0/3 (0.0%) | 100.0% | 35.9 ms | 35.06 ms | ❌ FAIL |
+| **Hybrid (Calibrated BM25 + Dense RRF)** | 0.5476 | 0.8571 | 0.7857 | 3/3 (100.0%) | 0.0% | 36.22 ms | 36.49 ms | ✅ PASS |
 
 ### 3.2 Per-Query Breakdown (BM25 vs Bounded Corrective vs Dense)
 

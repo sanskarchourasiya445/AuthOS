@@ -82,6 +82,7 @@ class ProposalEvaluationSummary:
     unsupported_met_rate: float
     citation_grounding_rate: float
     safe_downgrade_count: int
+    safe_downgrade_rate: float
     verifier_disagreement_count: int
     verifier_disagreement_rate: float
     abstention_on_empty_rate: float
@@ -471,6 +472,7 @@ def evaluate_agent_proposals(
             unsupported_met_rate=0.0,
             citation_grounding_rate=0.0,
             safe_downgrade_count=0,
+            safe_downgrade_rate=1.0,
             verifier_disagreement_count=0,
             verifier_disagreement_rate=0.0,
             abstention_on_empty_rate=0.0,
@@ -491,11 +493,16 @@ def evaluate_agent_proposals(
         if prop == exp:
             correct_proposals += 1
 
-        if prop == CriterionStatus.MET.value and exp != CriterionStatus.MET.value:
+        is_unsupported_met = (prop == CriterionStatus.MET.value and exp != CriterionStatus.MET.value)
+        if is_unsupported_met:
             unsupported_met += 1
-
-        if "UNSUPPORTED_MET_DOWNGRADED_TO_MISSING" in r["flags"]:
-            safe_downgrades += 1
+            # A safe downgrade occurs when an unsupported MET proposal is safely intercepted:
+            # Either pre-gate (flagged and set to MISSING) or post-gate by the deterministic verifier
+            # returning the correct non-MET status (final_ver != MET and final_ver == exp).
+            if "UNSUPPORTED_MET_DOWNGRADED_TO_MISSING" in r["flags"] or (
+                final_ver != CriterionStatus.MET.value and final_ver == exp
+            ):
+                safe_downgrades += 1
 
         if prop != final_ver:
             disagreements += 1
@@ -505,6 +512,8 @@ def evaluate_agent_proposals(
             if prop == CriterionStatus.MISSING.value:
                 empty_abstained += 1
 
+    downgrade_rate = round(safe_downgrades / unsupported_met, 4) if unsupported_met > 0 else 1.0
+
     return ProposalEvaluationSummary(
         provider=provider_name,
         total_proposals=total,
@@ -513,6 +522,7 @@ def evaluate_agent_proposals(
         unsupported_met_rate=round(unsupported_met / total, 4),
         citation_grounding_rate=1.0,
         safe_downgrade_count=safe_downgrades,
+        safe_downgrade_rate=downgrade_rate,
         verifier_disagreement_count=disagreements,
         verifier_disagreement_rate=round(disagreements / total, 4),
         abstention_on_empty_rate=round(empty_abstained / max(1, empty_total), 4),
@@ -741,7 +751,7 @@ def generate_agent_markdown_report(
         f"- **Raw Proposal Accuracy**: **{b3.raw_proposal_accuracy * 100:.1f}%**",
         f"- **Unsupported MET Proposals**: **{b3.unsupported_met_proposals}** ({b3.unsupported_met_rate * 100:.1f}%)",
         f"- **Citation Grounding Rate**: **{b3.citation_grounding_rate * 100:.1f}%** (exact verbatim match in candidate chunks)",
-        f"- **Safe Downgrade Count**: **{b3.safe_downgrade_count}** (unsupported MET proposals caught and downgraded to MISSING)",
+        f"- **Safe Downgrade Count**: **{b3.safe_downgrade_count} / {b3.unsupported_met_proposals}** ({b3.safe_downgrade_rate * 100:.1f}% of unsupported MET proposals safely intercepted and downgraded by gate)" if b3.unsupported_met_proposals > 0 else "- **Safe Downgrade Count**: **0 / 0** (no unsupported MET proposals generated)",
         f"- **Verifier Disagreement Rate**: **{b3.verifier_disagreement_rate * 100:.1f}%** ({b3.verifier_disagreement_count}/{b3.total_proposals} cases where gate corrected/refined proposal)",
         f"- **Abstention Rate on Empty/Unrelated Charts**: **{b3.abstention_on_empty_rate * 100:.1f}%**",
         "",

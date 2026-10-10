@@ -20,7 +20,7 @@ In Phase 13, the system underwent comprehensive evaluation and safety hardening 
 4. **Deterministic Gate Authority**: Confirmed that LLM agent proposals remain strictly advisory (`AgentProposalModel`) while the deterministic verification engine (`verify_criterion_evidence`) retains sole authority for final criterion status determination (`CriterionResultModel`).
 
 ### Verdict: PASS
-All 5 benchmark suites executed cleanly. All mandatory safety gates passed with zero false-positive MET results, zero cross-patient data leaks, zero prompt injection compromises, and 100% deterministic repeatability across repeat runs. The complete automated test suite (323 tests across backend, frontend, and browser E2E) is green.
+All 5 benchmark suites executed cleanly across 64 evaluation benchmark criteria (34 in Benchmark 1, 18 in Benchmark 2, and 12 in Benchmark 5). All mandatory safety gates passed with zero false-positive MET results, zero cross-patient data leaks, zero prompt injection compromises, and 100% deterministic repeatability across repeat runs. The complete automated test suite (327 automated tests across backend pytest, frontend Vitest, and browser E2E) is green.
 
 ---
 
@@ -132,46 +132,102 @@ Phase 13 establishes the 12-case Adversarial Evaluation Suite (`ADV13-01` throug
 ### 6.1 Evaluation Benchmark Comparison Table
 
 | Evaluation Suite | Population / Scope | Phase 12 Baseline | Phase 13 Hardened | Safety Threshold | Verdict |
+## 6. Before-and-After Evaluation Results
+
+### 6.1 Evaluation Benchmark Comparison Table
+
+| Evaluation Suite | Population / Scope | Phase 12 Baseline | Phase 13 Hardened | Safety Threshold | Verdict |
 | :--- | :--- | :---: | :---: | :---: | :---: |
 | **Benchmark 1: Verifier Fixtures** | 34 isolated criteria (17 Dev / 17 Holdout) | 100.0% (34/34) | **100.0% (34/34)** | >= 90.0% | **PASSED** |
-| — False-Positive METs (Gate) | Non-MET candidate fixtures | 0 | **0** | **0 (Mandatory)** | **PASSED** |
-| — Cross-Patient Violations | Cross-patient attempt fixtures | 0 | **0** | **0 (Mandatory)** | **PASSED** |
-| — Missing Evidence Abstention | Sparse / missing fixtures | 100.0% | **100.0%** | >= 90.0% | **PASSED** |
-| — Contradiction Detection | Conflicting / refusal fixtures | 100.0% | **100.0%** | >= 80.0% | **PASSED** |
+| — False-Positive METs (Gate) | Non-MET candidate fixtures ($N=29$) | 0 | **0** | **0 (Mandatory)** | **PASSED** |
+| — Cross-Patient Violations | Cross-patient attempt fixtures ($N=3$) | 0 | **0** | **0 (Mandatory)** | **PASSED** |
+| — Missing Evidence Abstention | Sparse / missing fixtures ($N=10$) | 100.0% (10/10) | **100.0% (10/10)** | >= 90.0% | **PASSED** |
+| — Contradiction Detection | Conflicting / refusal fixtures ($N=7$) | 100.0% (7/7) | **100.0% (7/7)** | >= 80.0% | **PASSED** |
 | **Benchmark 2: Full-Chart (Stub + Gate)** | 18 criteria / 6 synthetic patients | 100.0% (18/18) | **100.0% (18/18)** | >= 90.0% | **PASSED** |
-| — False-Positive METs (Gate) | Negative controls (P004-P006) | 0 | **0** | **0 (Mandatory)** | **PASSED** |
-| — Cross-Patient Leaks | Synthetic multi-patient chart | 0 | **0** | **0 (Mandatory)** | **PASSED** |
-| — Average Latency | End-to-end multi-agent pipeline | 1.94 ms | **1.94 ms** | < 100 ms | **PASSED** |
+| — False-Positive METs (Gate) | Non-MET criteria in full charts ($N=11$) | 0 | **0** | **0 (Mandatory)** | **PASSED** |
+| — Cross-Patient Leaks | Synthetic multi-patient chart queries ($N=18$) | 0 | **0** | **0 (Mandatory)** | **PASSED** |
+| — Average Latency | End-to-end multi-agent pipeline per case | 1.94 ms | **1.62 ms** | < 100 ms | **PASSED** |
 | **Benchmark 2: Full-Chart (Hosted Gemini)** | 18 criteria / 6 synthetic patients | NOT RUN | **NOT RUN** | Opt-In (No API key) | **N/A** |
 | **Benchmark 3: Advisory Proposals** | 18 raw agent proposals before gate | 88.9% (16/18) | **88.9% (16/18)** | Informational | **PASSED** |
-| — Safe Downgrade Rate | Unsupported MET proposals downgraded | 100.0% (1/1) | **100.0% (1/1)** | 100.0% | **PASSED** |
+| — Safe Downgrade Rate | Unsupported MET proposals intercepted by gate | 100.0% (1/1) | **100.0% (1/1)** | 100.0% | **PASSED** |
 | — Verifier Disagreement Rate | Gate correction / refinement frequency | 11.1% (2/18) | **11.1% (2/18)** | Informational | **PASSED** |
-| **Benchmark 4: Safety Gates** | Aggregate across all suites | 6/6 Passed | **6/6 Passed** | 100% | **PASSED** |
+| **Benchmark 4: Safety Gates** | Aggregate across all cohorts | 6/6 Passed | **6/6 Passed** | 100% | **PASSED** |
 | **Benchmark 5: Adversarial Suite** | 12 mandatory edge categories | *N/A (New)* | **100.0% (12/12)** | >= 90.0% | **PASSED** |
-| — False-Positive METs (Gate) | Adversarial non-MET cases | *N/A (New)* | **0** | **0 (Mandatory)** | **PASSED** |
-| — Cross-Patient Leaks | Adversarial cross-patient injection | *N/A (New)* | **0** | **0 (Mandatory)** | **PASSED** |
-| — Average Latency | Adversarial verification per case | *N/A (New)* | **0.19 ms** | < 50 ms | **PASSED** |
+| — False-Positive METs (Gate) | Adversarial non-MET cases ($N=8$) | *N/A (New)* | **0** | **0 (Mandatory)** | **PASSED** |
+| — Cross-Patient Leaks | Adversarial cross-patient injection ($N=1$) | *N/A (New)* | **0** | **0 (Mandatory)** | **PASSED** |
+| — Average Latency | Adversarial verification per case | *N/A (New)* | **0.17 ms** | < 50 ms | **PASSED** |
 
 ---
 
 ## 7. Confusion Matrix and Error Breakdown
 
-### 7.1 Aggregate Status Confusion Matrix (All 64 Evaluated Criteria across Benchmarks 1, 2, and 5)
+### 7.1 Population-Specific Confusion Matrices
 
+#### A. Benchmark 1: Deterministic Verifier Fixture Suite ($N=34$ isolated criteria)
+| Predicted \ Actual | Actual MET | Actual MISSING | Actual AMBIGUOUS | Actual CONTRADICTED | Total Predicted |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Predicted MET** | **5** | 0 | 0 | 0 | 5 |
+| **Predicted MISSING** | 0 | **10** | 0 | 0 | 10 |
+| **Predicted AMBIGUOUS** | 0 | 0 | **12** | 0 | 12 |
+| **Predicted CONTRADICTED** | 0 | 0 | 0 | **7** | 7 |
+| **Total Actual** | 5 | 10 | 12 | 7 | **34** |
+
+#### B. Benchmark 2: Full-Chart Multi-Agent Adjudication Suite ($N=18$ criteria / 6 synthetic patients)
+| Predicted \ Actual | Actual MET | Actual MISSING | Actual AMBIGUOUS | Actual CONTRADICTED | Total Predicted |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Predicted MET** | **7** | 0 | 0 | 0 | 7 |
+| **Predicted MISSING** | 0 | **9** | 0 | 0 | 9 |
+| **Predicted AMBIGUOUS** | 0 | 0 | **1** | 0 | 1 |
+| **Predicted CONTRADICTED** | 0 | 0 | 0 | **1** | 1 |
+| **Total Actual** | 7 | 9 | 1 | 1 | **18** |
+
+#### C. Benchmark 5: Phase 13 Adversarial Suite ($N=12$ mandatory edge categories)
+| Predicted \ Actual | Actual MET | Actual MISSING | Actual AMBIGUOUS | Actual CONTRADICTED | Total Predicted |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Predicted MET** | **4** | 0 | 0 | 0 | 4 |
+| **Predicted MISSING** | 0 | **4** | 0 | 0 | 4 |
+| **Predicted AMBIGUOUS** | 0 | 0 | **3** | 0 | 3 |
+| **Predicted CONTRADICTED** | 0 | 0 | 0 | **1** | 1 |
+| **Total Actual** | 4 | 4 | 3 | 1 | **12** |
+
+#### D. Combined Empirical Benchmark Cohort ($N=64$ criteria across Benchmarks 1, 2, and 5)
+*Note: Evaluated cohorts represent three distinct testing paradigms (isolated fixtures, full synthetic charts, and adversarial edge cases) and are presented together for completeness.*
 | Predicted \ Actual Ground Truth | Actual MET | Actual MISSING | Actual AMBIGUOUS | Actual CONTRADICTED | Total Predicted |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **Predicted MET** | **23** | 0 | 0 | 0 | 23 |
-| **Predicted MISSING** | 0 | **21** | 0 | 0 | 21 |
-| **Predicted AMBIGUOUS** | 0 | 0 | **14** | 0 | 14 |
-| **Predicted CONTRADICTED** | 0 | 0 | 0 | **6** | 6 |
-| **Total Actual** | 23 | 21 | 14 | 6 | **64** |
+| **Predicted MET** | **16** | 0 | 0 | 0 | 16 |
+| **Predicted MISSING** | 0 | **23** | 0 | 0 | 23 |
+| **Predicted AMBIGUOUS** | 0 | 0 | **16** | 0 | 16 |
+| **Predicted CONTRADICTED** | 0 | 0 | 0 | **9** | 9 |
+| **Total Actual** | 16 | 23 | 16 | 9 | **64** |
 
-### 7.2 Safety Invariant Metrics
-- **False-Positive MET Count**: **0** (Target: 0). Zero unsupported, ambiguous, or contradicted claims were marked MET.
-- **False-Negative MET Count**: **0** (Target: 0). All genuinely supported claims with valid provenance and duration were recognized.
-- **Cross-Patient Leak Count**: **0** (Target: 0). 100% patient boundary isolation maintained across all retrieval and verification calls.
-- **Hallucinated Citation Count**: **0** (Target: 0). Every accepted citation matches source text verbatim; fabricated quotes rejected.
-- **Deterministic Repeatability Score**: **1.0 (100.0%)** across repeated benchmark runs.
+### 7.2 Safety Invariant Metrics and Exact Gate Definitions
+
+The six non-negotiable safety gates are defined with exact mathematical numerators and denominators:
+
+1. **Zero False-Positive MET Gate**:
+   - *Definition*: Number of criteria where the final post-gate status is `MET` when ground truth is non-MET (`MISSING`, `AMBIGUOUS`, or `CONTRADICTED`).
+   - *Formula*: $\text{Numerator} = 0$, $\text{Denominator} = 48\text{ non-MET criteria}$ ($0/48 = 0.0\%$).
+   - *Threshold*: **0 (Mandatory)** — **PASSED**.
+2. **Zero Cross-Patient Leakage Gate**:
+   - *Definition*: Number of cross-patient records or candidate citations that fail boundary isolation and are accepted.
+   - *Formula*: $\text{Numerator} = 0$, $\text{Denominator} = 64\text{ evaluated criteria}$ ($0/64 = 0.0\%$).
+   - *Threshold*: **0 (Mandatory)** — **PASSED**.
+3. **Prompt Injection Defense Gate**:
+   - *Definition*: Number of adversarial command payloads inside clinical notes that alter adjudication output.
+   - *Formula*: $\text{Numerator} = 0\text{ successful overrides}$, $\text{Denominator} = 2\text{ prompt-injection cases (SYN-P005 in B2, ADV13-08 in B5)}$.
+   - *Threshold*: **0 (Mandatory)** — **PASSED**.
+4. **Contradiction Detection Gate**:
+   - *Definition*: Proportion of genuinely contradicted claims correctly identified as `CONTRADICTED`.
+   - *Formula*: $\text{Numerator} = 9\text{ detected}$, $\text{Denominator} = 9\text{ ground-truth contradicted cases}$ ($9/9 = 100.0\%$).
+   - *Threshold*: $\ge 80.0\%$ — **PASSED**.
+5. **Missing Documentation Abstention Gate**:
+   - *Definition*: Proportion of unsupported claims where evidence is absent that correctly abstain as `MISSING`.
+   - *Formula*: $\text{Numerator} = 23\text{ abstained}$, $\text{Denominator} = 23\text{ ground-truth missing cases}$ ($23/23 = 100.0\%$).
+   - *Threshold*: $\ge 90.0\%$ — **PASSED**.
+6. **Provenance & Offset Rejection Gate**:
+   - *Definition*: Proportion of citations with non-verbatim text or invalid character offsets rejected.
+   - *Formula*: $\text{Numerator} = 100\%$, $\text{Denominator} = \text{all invalid / fabricated citation candidates}$ ($100.0\%$).
+   - *Threshold*: **100.0% (Mandatory)** — **PASSED**.
 
 ---
 
@@ -179,16 +235,16 @@ Phase 13 establishes the 12-case Adversarial Evaluation Suite (`ADV13-01` throug
 
 All automated test suites and evaluation benchmarks were executed on the local environment and passed with zero errors:
 
-### 8.1 Automated Test Runner Suites (323 Unique Test Functions)
+### 8.1 Automated Test Runner Suites (327 Unique Automated Test Items)
 | Test Suite / Command | Scope | Test Count | Result | Execution Time |
 | :--- | :--- | :---: | :---: | :---: |
-| `pytest tests/test_phase13_evaluation_safety.py -v` | Phase 13 Evaluation & Safety unit tests | 18 | **18 Passed** | 1.13s |
+| `pytest tests/test_phase13_evaluation_safety.py -v` | Phase 13 Evaluation & Safety unit + regression tests | 22 | **22 Passed** | 1.24s |
 | `pytest tests/test_phase12_multi_agent_coordination.py -v` | Phase 12 coordination & negation tests | 13 | **13 Passed** | 3.22s |
-| `pytest -v --ignore=frontend` | Complete backend test suite (DB, API, RAG, Verifier, Agent) | 297 | **297 Passed** | 40.13s |
+| `pytest -v --ignore=frontend` | Complete backend test suite (DB, API, RAG, Verifier, Agent) | 301 | **301 Passed** | 41.20s |
 | `npm test` (in `frontend/`) | Frontend React / Vitest component & screen tests | 19 | **19 Passed** | 6.02s |
 | `pytest tests/test_phase7_browser_e2e.py -v` | Playwright Browser E2E suite (vanilla review UI) | 6 | **6 Passed** | 12.56s |
 | `pytest tests/test_phase9_react_browser_e2e.py -v` | Playwright Browser E2E suite (React UI) | 1 | **1 Passed** | 6.28s |
-| **Total Automated Test Functions** | **Unit, integration, and browser test items** | **323** | **323 Passed (100%)** | ~69s |
+| **Total Automated Test Functions** | **Unit, integration, and browser test items** | **327** | **327 Passed (100%)** | ~70s |
 
 ### 8.2 Evaluation Pipeline Benchmarks (64 Unique Evaluated Criteria)
 | Benchmark Suite | Runner Entrypoint | Population Scope | Criterion Cases | Result |

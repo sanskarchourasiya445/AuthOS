@@ -21,7 +21,10 @@ from backend.agent.analysis_agent import CriterionAnalysisAgent
 from backend.agent.orchestrator import AgentOrchestrator
 from backend.db.seed import seed_synthetic_data
 from backend.db.session import SessionLocal
-from backend.evaluation.agent_eval import run_phase13_adversarial_benchmark
+from backend.evaluation.agent_eval import (
+    evaluate_agent_proposals,
+    run_phase13_adversarial_benchmark,
+)
 from backend.evaluation.dataset import (
     EvaluationDataset,
     VerificationEvalCase,
@@ -490,6 +493,87 @@ class TestPhase13EvaluationAndSafety(unittest.TestCase):
         self.assertEqual(summary.cross_patient_violations, 0)
         self.assertEqual(summary.abstention_rate_on_missing, 1.0)
         self.assertEqual(summary.contradiction_detection_rate, 1.0)
+
+    # -------------------------------------------------------------------------
+    # 14. Safe Downgrade Metric Integrity and Regression Tests
+    # -------------------------------------------------------------------------
+
+    def test_safe_downgrade_metric_counts_verifier_downgrade_of_unsupported_met(self):
+        """Verify that an unsupported MET proposal downgraded by the verifier is counted as safe."""
+        mock_results = [
+            {
+                "case_id": "MOCK-01",
+                "patient_id": "SYN-P001",
+                "criterion_id": "C2",
+                "expected_status": CriterionStatus.CONTRADICTED.value,
+                "proposed_status": CriterionStatus.MET.value,
+                "final_verified_status": CriterionStatus.CONTRADICTED.value,
+                "verified_by_gate": False,
+                "flags": ["PROVIDER:TEST", "ADVISORY_PROPOSAL"],
+            }
+        ]
+        summary = evaluate_agent_proposals([], mock_results, "Mock Provider")
+        self.assertEqual(summary.unsupported_met_proposals, 1)
+        self.assertEqual(summary.safe_downgrade_count, 1)
+        self.assertEqual(summary.safe_downgrade_rate, 1.0)
+        self.assertEqual(summary.verifier_disagreement_count, 1)
+
+    def test_safe_downgrade_metric_ignores_supported_proposal(self):
+        """Verify that a supported MET proposal is not counted as an unsupported proposal or downgrade."""
+        mock_results = [
+            {
+                "case_id": "MOCK-02",
+                "patient_id": "SYN-P001",
+                "criterion_id": "C1",
+                "expected_status": CriterionStatus.MET.value,
+                "proposed_status": CriterionStatus.MET.value,
+                "final_verified_status": CriterionStatus.MET.value,
+                "verified_by_gate": True,
+                "flags": ["PROVIDER:TEST", "ADVISORY_PROPOSAL"],
+            }
+        ]
+        summary = evaluate_agent_proposals([], mock_results, "Mock Provider")
+        self.assertEqual(summary.unsupported_met_proposals, 0)
+        self.assertEqual(summary.safe_downgrade_count, 0)
+        self.assertEqual(summary.safe_downgrade_rate, 1.0)
+
+    def test_safe_downgrade_metric_rejects_false_positive_met_as_safe_downgrade(self):
+        """Verify that if the verifier fails to downgrade an unsupported MET, safe downgrade is 0."""
+        mock_results = [
+            {
+                "case_id": "MOCK-03",
+                "patient_id": "SYN-P001",
+                "criterion_id": "C2",
+                "expected_status": CriterionStatus.MISSING.value,
+                "proposed_status": CriterionStatus.MET.value,
+                "final_verified_status": CriterionStatus.MET.value,  # Erroneous false positive
+                "verified_by_gate": True,
+                "flags": ["PROVIDER:TEST", "ADVISORY_PROPOSAL"],
+            }
+        ]
+        summary = evaluate_agent_proposals([], mock_results, "Mock Provider")
+        self.assertEqual(summary.unsupported_met_proposals, 1)
+        self.assertEqual(summary.safe_downgrade_count, 0)
+        self.assertEqual(summary.safe_downgrade_rate, 0.0)
+
+    def test_safe_downgrade_metric_rejects_unjustified_status_disagreement(self):
+        """Verify that a verifier disagreement is not counted as safe unless the outcome matches ground truth."""
+        mock_results = [
+            {
+                "case_id": "MOCK-04",
+                "patient_id": "SYN-P001",
+                "criterion_id": "C2",
+                "expected_status": CriterionStatus.CONTRADICTED.value,
+                "proposed_status": CriterionStatus.MET.value,
+                "final_verified_status": CriterionStatus.MISSING.value,  # Mismatched non-MET status
+                "verified_by_gate": False,
+                "flags": ["PROVIDER:TEST", "ADVISORY_PROPOSAL"],
+            }
+        ]
+        summary = evaluate_agent_proposals([], mock_results, "Mock Provider")
+        self.assertEqual(summary.unsupported_met_proposals, 1)
+        self.assertEqual(summary.safe_downgrade_count, 0)
+        self.assertEqual(summary.safe_downgrade_rate, 0.0)
 
 
 if __name__ == "__main__":

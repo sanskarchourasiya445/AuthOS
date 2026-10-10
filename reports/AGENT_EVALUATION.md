@@ -30,7 +30,7 @@ Evaluates the deterministic verifier directly on explicitly supplied candidate f
 - **Citation Validity Rate**: **94.7%**
 - **Abstention Rate on Missing**: **100.0%**
 - **Contradiction Detection Rate**: **100.0%**
-- **Average Latency**: **0.13 ms** per case
+- **Average Latency**: **0.3 ms** per case
 
 ---
 
@@ -47,7 +47,7 @@ Evaluates retrieval + multi-agent proposal + deterministic verification against 
 | **Citation Validity Rate** | **100.0%** | N/A (NOT RUN) | 100.0% |
 | **Abstention on Missing** | **100.0%** | N/A (NOT RUN) | 100.0% |
 | **Contradiction Detection** | **100.0%** | N/A (NOT RUN) | >= 80.0% |
-| **Average Latency (ms)** | **1.19 ms** | N/A (NOT RUN) | < 100 ms |
+| **Average Latency (ms)** | **1.31 ms** | N/A (NOT RUN) | < 100 ms |
 | **Repeatability Score** | **1.0** | N/A (NOT RUN) | 1.0 (100%) |
 
 ---
@@ -60,7 +60,7 @@ Measures the quality, grounding, and calibration of the advisory proposals gener
 - **Raw Proposal Accuracy**: **88.9%**
 - **Unsupported MET Proposals**: **1** (5.6%)
 - **Citation Grounding Rate**: **100.0%** (exact verbatim match in candidate chunks)
-- **Safe Downgrade Count**: **0** (unsupported MET proposals caught and downgraded to MISSING)
+- **Safe Downgrade Count**: **1 / 1** (100.0% of unsupported MET proposals safely intercepted and downgraded by gate)
 - **Verifier Disagreement Rate**: **11.1%** (2/18 cases where gate corrected/refined proposal)
 - **Abstention Rate on Empty/Unrelated Charts**: **100.0%**
 

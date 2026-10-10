@@ -28,15 +28,19 @@ const QueueRoute: React.FC = () => {
 const InitialAuthBootstrap: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loginAsPersona } = useAuth()
   const [bootstrapping, setBootstrapping] = useState(!isAuthenticated)
+  const bootstrappedRef = React.useRef(false)
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      loginAsPersona('dr_chen')
-        .catch(() => {})
-        .finally(() => setBootstrapping(false))
-    } else {
-      setBootstrapping(false)
+    if (!bootstrappedRef.current) {
+      bootstrappedRef.current = true
+      if (!isAuthenticated) {
+        loginAsPersona('dr_chen')
+          .catch(() => {})
+          .finally(() => setBootstrapping(false))
+        return
+      }
     }
+    setBootstrapping(false)
   }, [isAuthenticated, loginAsPersona])
 
   if (bootstrapping) {
