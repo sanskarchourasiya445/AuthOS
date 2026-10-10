@@ -1,20 +1,26 @@
-"""Criterion Analysis Agent for AuthOS bounded multi-agent workflow (Phase 8).
+"""Criterion Analysis Agent for AuthOS bounded multi-agent workflow (Phase 8 & 11).
 
 Responsibilities:
 - Evaluate retrieved clinical candidates against policy criterion requirements.
-- Distinguish supportive, contradictory, ambiguous, and missing evidence.
-- Distinguish explicit clinical refusal from plans, recommendations, or pending events.
-- Never convert absence of documentation into proof of a negative occurrence.
-- Formulate structured advisory proposals with exact source citations and uncertainty rationales.
-- Transparent provider identification: explicitly reports whether execution used deterministic stubs or real LLM.
+- Uses pluggable BaseLLMProvider (Gemini hosted provider or deterministic stub).
+- Enforces strict evidence grounding and citation provenance validation before accepting proposals.
+- Distinguishes supportive, contradictory, ambiguous, and missing evidence.
+- Never converts absence of documentation into proof of a negative occurrence.
+- Formulates structured advisory proposals with exact source citations and uncertainty rationales.
+- Transparent provider identification: explicitly reports provider and external LLM status.
 """
 from dataclasses import dataclass
 import logging
 from typing import Any
 
-from backend.verification.engine import has_keyword
+from backend.agent.llm_provider import (
+    BaseLLMProvider,
+    LLMCriterionProposal,
+    LLMProviderResult,
+    get_llm_provider,
+)
+from backend.config import settings
 from contracts.schemas import (
-    AgentCriterionProposal,
     CriterionStatus,
     EvidenceItem,
     EvidencePolarity,
@@ -38,12 +44,112 @@ class AnalysisAgentResult:
     flags: list[str]
 
 
+def validate_and_ground_evidence(
+    proposal: LLMCriterionProposal,
+    candidates: list[dict[str, Any]],
+    patient_id: str,
+    retrieval_round: int = 1,
+) -> tuple[list[EvidenceItem], list[str], CriterionStatus]:
+    """Validate model citations against retrieved candidate chunks.
+
+    Enforces:
+    1. Cited source_id must exist in supplied candidates.
+    2. Cited patient_id must match authorized scoped patient.
+    3. Quoted text must be an exact verbatim substring of the candidate chunk text.
+    4. Exact character start and end offsets are computed from the verified candidate chunk.
+    5. Fabricated sources, altered quotes, or cross-patient references are rejected.
+    6. If all evidence for a proposed MET is rejected, the status is safely downgraded.
+    """
+    valid_items: list[EvidenceItem] = []
+    flags: list[str] = []
+
+    # Map candidate chunks by source_id
+    cand_by_source: dict[str, dict[str, Any]] = {c["source_id"]: c for c in candidates if "source_id" in c}
+
+    for q in proposal.evidence_quotes:
+        source_id = q.source_id.strip() if q.source_id else ""
+        raw_quote = q.quote.strip() if q.quote else ""
+
+        # 1. Source existence check
+        if source_id not in cand_by_source:
+            flags.append(f"UNKNOWN_SOURCE_ID_REJECTED:{source_id}")
+            continue
+
+        cand = cand_by_source[source_id]
+
+        # 2. Patient boundary check
+        cand_patient = cand.get("patient_id")
+        if cand_patient != patient_id:
+            flags.append(f"CROSS_PATIENT_QUOTE_REJECTED:{cand_patient}")
+            continue
+
+        # 3. Verbatim quotation match check
+        cand_text = cand.get("quote", "")
+        sub_idx = cand_text.find(raw_quote)
+        if sub_idx == -1:
+            flags.append(f"ALTERED_OR_FABRICATED_QUOTE_REJECTED:{source_id}")
+            continue
+
+        # 4. Compute verified character offsets
+        base_start = cand.get("char_start") or 0
+        char_start = base_start + sub_idx
+        char_end = char_start + len(raw_quote)
+
+        # 5. Parse polarity
+        pol_val = q.polarity.upper() if q.polarity else "SUPPORTING"
+        if pol_val in EvidencePolarity.__members__:
+            polarity = EvidencePolarity[pol_val]
+        else:
+            polarity = EvidencePolarity.SUPPORTING
+
+        valid_items.append(
+            EvidenceItem(
+                source_id=source_id,
+                patient_id=patient_id,
+                quote=raw_quote,
+                document_date=cand.get("document_date"),
+                chunk_id=cand.get("chunk_id"),
+                char_start=char_start,
+                char_end=char_end,
+                polarity=polarity,
+                retrieval_round=retrieval_round,
+            )
+        )
+
+    # 6. Parse proposed status safely
+    status_str = proposal.proposed_status.upper().strip()
+    try:
+        proposed_status = CriterionStatus(status_str)
+    except ValueError:
+        flags.append(f"UNKNOWN_STATUS_FALLBACK:{status_str}")
+        proposed_status = CriterionStatus.AMBIGUOUS
+
+    # 7. Safe fallback if proposed MET has no verified supporting evidence
+    if proposed_status == CriterionStatus.MET and not valid_items:
+        flags.append("UNSUPPORTED_MET_DOWNGRADED_TO_MISSING")
+        proposed_status = CriterionStatus.MISSING
+
+    return valid_items, flags, proposed_status
+
+
 class CriterionAnalysisAgent:
     """Agent role responsible for clinical evidence synthesis and proposal generation."""
 
-    def __init__(self, provider_name: str = "DETERMINISTIC_AGENT_STUB", is_external_llm: bool = False):
-        self.provider_name = provider_name
-        self.is_external_llm = is_external_llm
+    def __init__(
+        self,
+        provider: BaseLLMProvider | None = None,
+        provider_name: str | None = None,
+        is_external_llm: bool | None = None,
+    ):
+        if provider is not None:
+            self.provider = provider
+        elif provider_name is not None:
+            self.provider = get_llm_provider(provider_name=provider_name)
+        else:
+            self.provider = get_llm_provider()
+
+        self.provider_name = self.provider.provider_name
+        self.is_external_llm = self.provider.is_external_llm
 
     def analyze(
         self,
@@ -59,7 +165,7 @@ class CriterionAnalysisAgent:
         """Synthesize candidate evidence into a structured advisory proposal."""
         flags: list[str] = [f"PROVIDER:{self.provider_name}", "ADVISORY_PROPOSAL"]
 
-        # Case 1: Empty evidence (explicit abstention)
+        # Case 1: Empty evidence (explicit deterministic abstention without calling LLM)
         if not candidates:
             return AnalysisAgentResult(
                 criterion_id=criterion_id,
@@ -77,141 +183,53 @@ class CriterionAnalysisAgent:
                 flags=flags + ["EVIDENCE_ABSENT_ABSTAINED"],
             )
 
-        # Convert candidate dicts to EvidenceItem models with validation
-        evidence_items: list[EvidenceItem] = []
-        for c in candidates:
-            pol_str = c.get("polarity", EvidencePolarity.SUPPORTING.value)
-            try:
-                pol = EvidencePolarity(pol_str)
-            except ValueError:
-                pol = EvidencePolarity.SUPPORTING
+        # Case 2: Delegate to configured provider
+        provider_res: LLMProviderResult = self.provider.generate_proposal(
+            criterion_id=criterion_id,
+            criterion_text=criterion_text,
+            patient_id=patient_id,
+            required_facts=required_facts,
+            min_duration_days=min_duration_days,
+            candidates=candidates,
+        )
 
-            evidence_items.append(
-                EvidenceItem(
-                    source_id=c["source_id"],
-                    patient_id=c["patient_id"],
-                    quote=c["quote"],
-                    document_date=c.get("document_date"),
-                    chunk_id=c.get("chunk_id"),
-                    char_start=c.get("char_start"),
-                    char_end=c.get("char_end"),
-                    polarity=pol,
-                    retrieval_round=retrieval_round,
-                )
+        # Case 3: Handle provider failure (fail safely into controlled MISSING state)
+        if not provider_res.success or not provider_res.proposal:
+            err_code = provider_res.error_code or "PROVIDER_FAILURE"
+            err_msg = provider_res.error_message or "Unknown provider failure"
+            flags.extend([f"PROVIDER_ERROR:{err_code}", "PROPOSAL_UNAVAILABLE"])
+
+            return AnalysisAgentResult(
+                criterion_id=criterion_id,
+                proposed_status=CriterionStatus.MISSING,
+                confidence=0.0,
+                evidence_items=[],
+                missing_facts=required_facts or [criterion_text],
+                detected_gaps=[f"Analysis unavailable: {err_code}"],
+                uncertainty_rationale=f"LLM advisory proposal unavailable ({err_code}): {err_msg}",
+                is_external_llm=self.is_external_llm,
+                provider_name=self.provider_name,
+                flags=flags,
             )
 
-        # Evaluate clinical logic
-        missing_facts: list[str] = []
-        detected_gaps: list[str] = []
-        c_texts = [c["quote"].lower() for c in candidates]
-        has_contra = any(e.polarity == EvidencePolarity.CONTRADICTING for e in evidence_items)
-        has_unclear = any(e.polarity == EvidencePolarity.UNCLEAR for e in evidence_items)
-
-        # A. Conservative Therapy / Physical Therapy criterion
-        if has_keyword(criterion_text, ["conservative", "physical therapy", "therapy"]):
-            req_defaults = ["Supervised physical therapy", "Duration >= 6 weeks"]
-            active_reqs = required_facts or req_defaults
-
-            # Distinguish explicit refusal vs plan vs completed
-            is_refusal = any(
-                w in text for text in c_texts
-                for w in ["declined", "refused", "stopped", "failed to complete", "did not tolerate"]
-            )
-            is_plan_only = any(
-                w in text for text in c_texts
-                for w in ["plan to initiate", "referred for future", "pending consultation", "recommend physical therapy"]
-            ) and not any(
-                w in text for text in c_texts
-                for w in ["completed", "attended", "weeks of therapy", "sessions"]
-            )
-            has_dates_span = any(
-                ("july" in text and "august" in text) or ("6 weeks" in text) or ("8 weeks" in text)
-                for text in c_texts
-            )
-
-            if is_refusal:
-                status = CriterionStatus.CONTRADICTED
-                confidence = 0.95
-                rationale = (
-                    "Chart documentation contains explicit patient refusal or intolerance of prescribed conservative physical therapy. "
-                    "This directly contradicts conservative therapy completion requirements."
-                )
-                detected_gaps.append("Patient declined or discontinued conservative therapy.")
-            elif is_plan_only:
-                status = CriterionStatus.AMBIGUOUS
-                confidence = 0.65
-                rationale = (
-                    "Physical therapy is recommended or planned in clinical notes, but completed course is not documented. "
-                    "A planned recommendation cannot substitute for completed trial."
-                )
-                missing_facts.append("Duration >= 6 weeks")
-                detected_gaps.append("Physical therapy is planned/recommended but not completed.")
-            elif has_unclear or any("exact start date" in text for text in c_texts):
-                status = CriterionStatus.AMBIGUOUS
-                confidence = 0.50
-                rationale = (
-                    "Physical therapy is mentioned, but exact onset dates, weekly frequency, or duration threshold are ambiguous."
-                )
-                missing_facts.append("Duration >= 6 weeks")
-                detected_gaps.append("Ambiguous physical therapy duration/completion.")
-            elif has_dates_span:
-                status = CriterionStatus.MET
-                confidence = 0.95
-                rationale = (
-                    "Chart substantiates completed course of supervised physical therapy spanning required duration "
-                    "with documented persistent symptoms."
-                )
-            else:
-                status = CriterionStatus.AMBIGUOUS
-                confidence = 0.45
-                rationale = "Physical therapy participation is noted, but 6-week duration threshold is not conclusively established."
-                missing_facts.append("Duration >= 6 weeks")
-                detected_gaps.append("Duration inconclusive from provided records.")
-
-        # B. Imaging Requisition / Order criterion
-        elif has_keyword(criterion_text, ["request", "order", "mri"]):
-            has_order = any("request" in text or "order" in text or "requisition" in text for text in c_texts)
-            if has_order:
-                status = CriterionStatus.MET
-                confidence = 0.95
-                rationale = "Physician order and requisition for advanced lumbar MRI imaging is documented."
-            else:
-                status = CriterionStatus.MISSING
-                confidence = 0.85
-                rationale = "No physician order or requisition for requested imaging located in patient chart."
-                missing_facts.append("Lumbar MRI requested")
-                detected_gaps.append("Missing physician imaging requisition order.")
-
-        # C. Persistent Symptom / Low Back Pain criterion
-        elif has_keyword(criterion_text, ["persistent", "symptom", "back pain", "low back"]):
-            has_pain = any("back pain" in text or "lumbago" in text or "lumbar pain" in text for text in c_texts)
-            if has_pain:
-                status = CriterionStatus.MET
-                confidence = 0.95
-                rationale = "Documentation of persistent low back symptoms confirmed by clinical exam/history."
-            else:
-                status = CriterionStatus.MISSING
-                confidence = 0.85
-                rationale = "No clinical documentation of low back symptoms found."
-                missing_facts.append("Low back pain")
-                detected_gaps.append("Missing documentation of low back symptoms.")
-
-        # D. Generic / Fallback criterion
-        else:
-            status = CriterionStatus.MISSING
-            confidence = 0.50
-            rationale = "Criterion could not be substantiated from retrieved passages."
-            missing_facts.append(criterion_text)
-            detected_gaps.append("Unsubstantiated criterion requirement.")
+        # Case 4: Validate and ground model citations
+        proposal = provider_res.proposal
+        evidence_items, grounding_flags, validated_status = validate_and_ground_evidence(
+            proposal=proposal,
+            candidates=candidates,
+            patient_id=patient_id,
+            retrieval_round=retrieval_round,
+        )
+        flags.extend(grounding_flags)
 
         return AnalysisAgentResult(
             criterion_id=criterion_id,
-            proposed_status=status,
-            confidence=confidence,
+            proposed_status=validated_status,
+            confidence=proposal.confidence,
             evidence_items=evidence_items,
-            missing_facts=missing_facts,
-            detected_gaps=detected_gaps,
-            uncertainty_rationale=rationale,
+            missing_facts=proposal.missing_facts,
+            detected_gaps=proposal.detected_gaps,
+            uncertainty_rationale=proposal.uncertainty_rationale,
             is_external_llm=self.is_external_llm,
             provider_name=self.provider_name,
             flags=flags,
