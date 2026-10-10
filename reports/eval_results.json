@@ -1,16 +1,16 @@
 {
   "dataset_version": "eval-dataset-v1.0",
-  "timestamp": "2026-10-10T06:16:07.982472+00:00",
+  "timestamp": "2026-10-10T06:31:18.565089+00:00",
   "metadata": {
     "title": "AuthOS Reliability Baseline Evaluation Report",
     "dataset_version": "eval-dataset-v1.0",
-    "timestamp": "2026-10-10T06:16:07.982472+00:00",
+    "timestamp": "2026-10-10T06:31:18.565089+00:00",
     "environment": {
       "os": "Windows-11-10.0.26300-SP0",
       "python_version": "3.13.1",
-      "git_commit": "9249fb4b4a4db2e28429deccada5dfa17026e303",
+      "git_commit": "caf39402e168313cd834bc40eb6facf0255b5b3c",
       "git_branch": "main",
-      "git_dirty": "false"
+      "git_dirty": "true"
     },
     "notice": "SYNTHETIC DEVELOPMENT EVALUATION ONLY. Not clinical validation."
   },
@@ -482,10 +482,10 @@
         "cross_patient_violations": 0,
         "all_safety_checks_passed": true,
         "latency_ms": {
-          "mean": 0.67,
-          "median": 0.6,
-          "min": 0.55,
-          "max": 1.23
+          "mean": 0.85,
+          "median": 0.69,
+          "min": 0.59,
+          "max": 1.44
         },
         "is_deterministic": true,
         "case_results": [
@@ -676,10 +676,10 @@
         "cross_patient_violations": 0,
         "all_safety_checks_passed": true,
         "latency_ms": {
-          "mean": 0.82,
-          "median": 0.66,
-          "min": 0.6,
-          "max": 1.56
+          "mean": 0.88,
+          "median": 0.72,
+          "min": 0.59,
+          "max": 1.74
         },
         "is_deterministic": true,
         "case_results": [
@@ -873,10 +873,10 @@
         "cross_patient_violations": 0,
         "all_safety_checks_passed": false,
         "latency_ms": {
-          "mean": 50.75,
-          "median": 33.86,
-          "min": 30.57,
-          "max": 204.13
+          "mean": 51.78,
+          "median": 35.01,
+          "min": 28.69,
+          "max": 194.12
         },
         "is_deterministic": true,
         "case_results": [
@@ -1088,10 +1088,10 @@
         "cross_patient_violations": 0,
         "all_safety_checks_passed": true,
         "latency_ms": {
-          "mean": 33.65,
-          "median": 34.39,
-          "min": 29.1,
-          "max": 37.77
+          "mean": 32.32,
+          "median": 32.31,
+          "min": 29.61,
+          "max": 34.24
         },
         "is_deterministic": true,
         "case_results": [
@@ -1278,10 +1278,10 @@
         "cross_patient_violations": 0,
         "all_safety_checks_passed": false,
         "latency_ms": {
-          "mean": 34.44,
-          "median": 34.32,
-          "min": 30.69,
-          "max": 39.79
+          "mean": 34.52,
+          "median": 34.55,
+          "min": 32.91,
+          "max": 38.53
         },
         "is_deterministic": true,
         "case_results": [
@@ -1479,6 +1479,200 @@
             "reciprocal_rank": null,
             "cross_patient_leakage": false,
             "safety_pass": false
+          }
+        ]
+      },
+      "hybrid_calibrated": {
+        "method_name": "Hybrid (Calibrated BM25 + Dense RRF)",
+        "total_cases": 10,
+        "quality_cases_count": 7,
+        "safety_cases_count": 3,
+        "mean_precision_at_k": 0.5476,
+        "mean_recall_at_k": 0.8571,
+        "mrr": 0.7857,
+        "cross_patient_violations": 0,
+        "all_safety_checks_passed": true,
+        "latency_ms": {
+          "mean": 33.42,
+          "median": 32.59,
+          "min": 31.48,
+          "max": 38.16
+        },
+        "is_deterministic": true,
+        "case_results": [
+          {
+            "case_id": "RET-01-RELEVANT",
+            "name": "Targeted physical therapy retrieval",
+            "category": "correctly_supported_claims",
+            "query": "Conservative treatment history is documented for at least six weeks physical therapy",
+            "is_safety_check": false,
+            "retrieved_sources": [
+              "SYN-P001-PT-02",
+              "SYN-P001-ORDER-03",
+              "SYN-P001-NOTE-01"
+            ],
+            "expected_sources": [
+              "SYN-P001-PT-02"
+            ],
+            "precision_at_k": 0.3333,
+            "recall_at_k": 1.0,
+            "reciprocal_rank": 1.0,
+            "cross_patient_leakage": false,
+            "safety_pass": true
+          },
+          {
+            "case_id": "RET-02-KEYWORD-OVERLAP",
+            "name": "Clinical examination note vs radiology order keyword overlap",
+            "category": "unsupported_claims_with_keyword_overlap",
+            "query": "low back pain persistent symptoms duration",
+            "is_safety_check": false,
+            "retrieved_sources": [
+              "SYN-P001-ORDER-03",
+              "SYN-P001-NOTE-01",
+              "SYN-P001-PT-02"
+            ],
+            "expected_sources": [
+              "SYN-P001-NOTE-01"
+            ],
+            "precision_at_k": 0.3333,
+            "recall_at_k": 1.0,
+            "reciprocal_rank": 0.5,
+            "cross_patient_leakage": false,
+            "safety_pass": true
+          },
+          {
+            "case_id": "RET-03-CONTRADICTORY",
+            "name": "Topical match on PT offer with clinical refusal",
+            "category": "explicitly_contradicted_evidence",
+            "query": "physical therapy offered conservative treatment",
+            "is_safety_check": false,
+            "retrieved_sources": [
+              "SYN-P003-PT-02",
+              "SYN-P003-ORDER-03"
+            ],
+            "expected_sources": [
+              "SYN-P003-PT-02"
+            ],
+            "precision_at_k": 0.5,
+            "recall_at_k": 1.0,
+            "reciprocal_rank": 1.0,
+            "cross_patient_leakage": false,
+            "safety_pass": true
+          },
+          {
+            "case_id": "RET-04-SYNONYM-MISMATCH",
+            "name": "Synonym mismatch bridging",
+            "category": "correctly_supported_claims",
+            "query": "ambulation assistance and non operative rehabilitation regimen",
+            "is_safety_check": false,
+            "retrieved_sources": [],
+            "expected_sources": [
+              "SYN-P001-PT-02"
+            ],
+            "precision_at_k": 0.0,
+            "recall_at_k": 0.0,
+            "reciprocal_rank": 0.0,
+            "cross_patient_leakage": false,
+            "safety_pass": true
+          },
+          {
+            "case_id": "RET-05-MULTIPLE-RELEVANT",
+            "name": "Multiple relevant sources retrieval",
+            "category": "minimum_duration_and_multi_fact_requirements",
+            "query": "persistent lumbar spine pain and clinical symptoms",
+            "is_safety_check": false,
+            "retrieved_sources": [
+              "SYN-P001-ORDER-03",
+              "SYN-P001-NOTE-01",
+              "SYN-P001-PT-02"
+            ],
+            "expected_sources": [
+              "SYN-P001-NOTE-01",
+              "SYN-P001-ORDER-03"
+            ],
+            "precision_at_k": 0.6667,
+            "recall_at_k": 1.0,
+            "reciprocal_rank": 1.0,
+            "cross_patient_leakage": false,
+            "safety_pass": true
+          },
+          {
+            "case_id": "RET-06-ORDER-VS-EXAM",
+            "name": "Requisition intent targeting ORDER-03 over notes",
+            "category": "correctly_supported_claims",
+            "query": "ordering clinician requisition for lumbar imaging study",
+            "is_safety_check": false,
+            "retrieved_sources": [
+              "SYN-P002-ORDER-03"
+            ],
+            "expected_sources": [
+              "SYN-P002-ORDER-03"
+            ],
+            "precision_at_k": 1.0,
+            "recall_at_k": 1.0,
+            "reciprocal_rank": 1.0,
+            "cross_patient_leakage": false,
+            "safety_pass": true
+          },
+          {
+            "case_id": "RET-07-EXPLICIT-NEGATION",
+            "name": "Negative symptom documentation retrieval",
+            "category": "negation_and_temporal_ambiguity",
+            "query": "bowel or bladder dysfunction sphincter changes",
+            "is_safety_check": false,
+            "retrieved_sources": [
+              "SYN-P001-NOTE-01"
+            ],
+            "expected_sources": [
+              "SYN-P001-NOTE-01"
+            ],
+            "precision_at_k": 1.0,
+            "recall_at_k": 1.0,
+            "reciprocal_rank": 1.0,
+            "cross_patient_leakage": false,
+            "safety_pass": true
+          },
+          {
+            "case_id": "RET-08-CROSS-PATIENT-ISOLATION",
+            "name": "Cross-patient query text isolation",
+            "category": "cross_patient_evidence_attempts",
+            "query": "attended several sessions exact start date and duration are not documented",
+            "is_safety_check": true,
+            "retrieved_sources": [],
+            "expected_sources": [],
+            "precision_at_k": null,
+            "recall_at_k": null,
+            "reciprocal_rank": null,
+            "cross_patient_leakage": false,
+            "safety_pass": true
+          },
+          {
+            "case_id": "RET-09-UNSUPPORTED-CRITERION",
+            "name": "Negative control for unmentioned condition",
+            "category": "empty_or_irrelevant_retrieval",
+            "query": "progressive motor deficit rapid motor weakness cauda equina",
+            "is_safety_check": true,
+            "retrieved_sources": [],
+            "expected_sources": [],
+            "precision_at_k": null,
+            "recall_at_k": null,
+            "reciprocal_rank": null,
+            "cross_patient_leakage": false,
+            "safety_pass": true
+          },
+          {
+            "case_id": "RET-10-ZERO-MATCH-DOMAIN",
+            "name": "Completely off-domain query negative control",
+            "category": "empty_or_irrelevant_retrieval",
+            "query": "coronary artery bypass graft cardiopulmonary bypass hemodynamics",
+            "is_safety_check": true,
+            "retrieved_sources": [],
+            "expected_sources": [],
+            "precision_at_k": null,
+            "recall_at_k": null,
+            "reciprocal_rank": null,
+            "cross_patient_leakage": false,
+            "safety_pass": true
           }
         ]
       }

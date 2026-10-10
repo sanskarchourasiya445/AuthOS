@@ -138,6 +138,7 @@ def retrieve_hybrid_chart_candidates(
     top_k: int = 5,
     rrf_k: int = 60,
     chunk_version: str = "v1",
+    min_dense_score: float = 0.0,
 ) -> list[EvidenceCandidate]:
     """Retrieve ranked candidates via Reciprocal Rank Fusion (RRF) of BM25 and Dense retrieval.
 
@@ -152,8 +153,16 @@ def retrieve_hybrid_chart_candidates(
         session, patient_id=patient_id, query=query, top_k=top_k * 2, chunk_version=chunk_version
     )
     dense_cands = retrieve_dense_chart_candidates(
-        session, patient_id=patient_id, query=query, top_k=top_k * 2, chunk_version=chunk_version
+        session,
+        patient_id=patient_id,
+        query=query,
+        top_k=top_k * 2,
+        min_score=min_dense_score,
+        chunk_version=chunk_version,
     )
+
+    if not bm25_cands and not dense_cands:
+        return []
 
     rrf_scores: dict[str, float] = {}
     candidate_map: dict[str, EvidenceCandidate] = {}

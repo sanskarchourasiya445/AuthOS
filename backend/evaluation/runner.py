@@ -345,9 +345,19 @@ def run_evaluation_pipeline(
                     hybrid_metrics = evaluate_retrieval_method(
                         session, "Hybrid (BM25 + Dense RRF)", retrieve_hybrid_chart_candidates, dataset.retrieval_cases, k=retrieval_k
                     )
+
+                    def calibrated_hybrid_wrapper(sess, patient_id, query, top_k):
+                        return retrieve_hybrid_chart_candidates(
+                            sess, patient_id=patient_id, query=query, top_k=top_k, min_dense_score=0.70
+                        )
+
+                    hybrid_calibrated_metrics = evaluate_retrieval_method(
+                        session, "Hybrid (Calibrated BM25 + Dense RRF)", calibrated_hybrid_wrapper, dataset.retrieval_cases, k=retrieval_k
+                    )
                     methods_dict["dense_raw"] = dense_raw_metrics
                     methods_dict["dense_calibrated"] = dense_calibrated_metrics
                     methods_dict["hybrid"] = hybrid_metrics
+                    methods_dict["hybrid_calibrated"] = hybrid_calibrated_metrics
                 except Exception as e:
                     print(f"Warning: Dense/Hybrid evaluation skipped due to: {e}", file=sys.stderr)
 
