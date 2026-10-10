@@ -1,6 +1,6 @@
 # AuthOS Phase 8: Bounded Multi-Agent Comparative Evaluation Report
 
-**Run Timestamp**: `2026-10-10T05:03:20.771034+00:00`  
+**Run Timestamp**: `2026-10-10T05:13:38.427755+00:00`  
 **Dataset Version**: `eval-dataset-v1.0` (34 cases)  
 **LLM Provider Status**: `No external LLM provider configured; evaluated using explicit deterministic stubs.`  
 
@@ -24,7 +24,7 @@ This evaluation benchmarks the Phase 8 bounded multi-agent workflow against the 
 | Citation Validity | 94.7% | 100.0% | 48.5% | 100.0% |
 | Abstention on Missing | 100.0% | 90.0% | 30.0% | 100.0% |
 | Contradiction Detection | 100.0% | 0.0% | 28.6% | >= 80% |
-| Average Latency (ms) | 0.2 ms | 5.19 ms | 1.04 ms | < 100 ms |
+| Average Latency (ms) | 0.2 ms | 5.41 ms | 1.03 ms | < 100 ms |
 | Token / API Cost | $0.00 | $0.00 | $0.00 | $0.00 (Stubbed) |
 | Determinism Score | 1.0 | 1.0 | 1.0 | 1.0 (100%) |
 
