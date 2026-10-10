@@ -660,3 +660,45 @@ body {
   border-left-color: var(--success);
   background: #14532d;
 }
+
+/* Mobile Responsive Adjustments */
+@media (max-width: 640px) {
+  .app-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 12px 14px;
+  }
+
+  .brand-section {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .actor-session-bar {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .user-chip {
+    flex: 1 1 100%;
+    justify-content: space-between;
+  }
+
+  .app-nav {
+    padding: 0 12px;
+    overflow-x: auto;
+  }
+
+  .workspace-meta {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .workspace-tabs {
+    flex-wrap: wrap;
+  }
+}
+

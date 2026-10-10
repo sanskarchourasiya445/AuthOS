@@ -5,6 +5,7 @@ import { ToastProvider } from '../components/common/Toast'
 import { AppShell } from '../components/layout/AppShell'
 import { CaseQueueScreen } from '../features/cases/CaseQueueScreen'
 import { CaseWorkspaceScreen } from '../features/workspace/CaseWorkspaceScreen'
+import { LoadingState } from '../components/common/LoadingState'
 
 // Wrapper to pass activeCaseId to AppShell
 const WorkspaceRoute: React.FC = () => {
@@ -26,17 +27,25 @@ const QueueRoute: React.FC = () => {
 
 const InitialAuthBootstrap: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loginAsPersona } = useAuth()
-  const [bootstrapped, setBootstrapped] = useState(false)
+  const [bootstrapping, setBootstrapping] = useState(!isAuthenticated)
 
   useEffect(() => {
-    if (!isAuthenticated && !bootstrapped) {
-      setBootstrapped(true)
-      // Auto-authenticate as default clinical reviewer (Dr. Sarah Chen, MD)
-      loginAsPersona('dr_chen').catch(() => {
-        // Fallback gracefully to unauthenticated state if backend isn't ready
-      })
+    if (!isAuthenticated) {
+      loginAsPersona('dr_chen')
+        .catch(() => {})
+        .finally(() => setBootstrapping(false))
+    } else {
+      setBootstrapping(false)
     }
-  }, [isAuthenticated, bootstrapped, loginAsPersona])
+  }, [isAuthenticated, loginAsPersona])
+
+  if (bootstrapping) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <LoadingState message="Initializing clinical session..." />
+      </div>
+    )
+  }
 
   return <>{children}</>
 }
