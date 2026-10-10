@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     auth_algorithm: str = "HS256"
     auth_token_expire_minutes: int = 120
     auth_issuer: str = "authos"
+    auth_audience: str = "authos-api"
 
     def validate_production_configuration(self) -> None:
         """Enforce strict production security invariants."""

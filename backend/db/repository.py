@@ -32,9 +32,12 @@ class PostgresCaseRepository:
     def __init__(self, session_factory: Callable[[], Session] = SessionLocal):
         self._session_factory = session_factory
 
-    def get_all_cases(self) -> list[Case]:
+    def get_all_cases(self, allowed_case_ids: list[str] | None = None) -> list[Case]:
         with self._session_factory() as session:
-            rows = session.query(CaseModel).order_by(CaseModel.case_id).all()
+            query = session.query(CaseModel)
+            if allowed_case_ids is not None:
+                query = query.filter(CaseModel.case_id.in_(allowed_case_ids))
+            rows = query.order_by(CaseModel.case_id).all()
             return [
                 Case(
                     case_id=r.case_id,

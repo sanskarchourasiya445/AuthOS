@@ -104,14 +104,29 @@ def retrieve_chart_candidates(
     top_k: int = 5,
     min_score: float = 0.0,
     chunk_version: str = "v1",
+    corrective: bool = False,
+    max_retries: int = 2,
 ) -> list[EvidenceCandidate]:
     """Retrieve ranked patient chart evidence candidates for a specific patient.
 
     Enforces strict patient boundary isolation. Chunks belonging to any other
     patient are never retrieved or evaluated.
+    If corrective=True, executes a bounded deterministic retry loop when initial search yields 0 hits.
     """
     if not patient_id or not query or not query.strip():
         return []
+
+    if corrective:
+        from backend.rag.corrective import retrieve_chart_candidates_bounded_corrective
+        cands, _ = retrieve_chart_candidates_bounded_corrective(
+            session,
+            patient_id=patient_id,
+            query=query,
+            top_k=top_k,
+            max_retries=max_retries,
+            chunk_version=chunk_version,
+        )
+        return cands
 
     # 1. Query persisted chunks strictly isolated by patient_id
     chunks = (

@@ -53,9 +53,9 @@ class ApiContractTests(unittest.TestCase):
         self.app.dependency_overrides[get_repository] = lambda: self.repo
         self.client = TestClient(self.app)
         dev_reviewer = AuthenticatedUser(
-            sub="REV-001",
-            name="Dr. Sarah Chen, MD",
-            role=UserRole.CLINICIAN_REVIEWER.value,
+            sub="ADM-001",
+            name="Alex Rivera (Admin)",
+            role=UserRole.ADMIN.value,
             cases=["*"],
         )
         token = create_access_token(dev_reviewer)

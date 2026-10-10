@@ -91,7 +91,7 @@ class EndToEndWorkflowTests(unittest.TestCase):
             sub="REV-001",
             name="Dr. Sarah Chen, MD",
             role=UserRole.CLINICIAN_REVIEWER.value,
-            cases=["*"],
+            cases=["CASE-SYN-001", "CASE-SYN-002", "CASE-SYN-003"],
         )
         token = create_access_token(dev_reviewer)
         self.client.headers["Authorization"] = f"Bearer {token}"

@@ -26,6 +26,15 @@ auth_router = APIRouter(prefix="/auth", tags=["auth"])
 )
 def login_for_access_token(credentials: TokenRequest) -> TokenResponse:
     """Issue a signed JWT access token for synthetic reviewer/auditor accounts."""
+    if settings.app_env.lower() in ("production", "prod"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "code": ErrorCode.ACCESS_DENIED.value,
+                "message": "Synthetic credential authentication is disabled in production.",
+            },
+        )
+
     user = authenticate_synthetic_user(credentials.username, credentials.password)
     if not user:
         raise HTTPException(

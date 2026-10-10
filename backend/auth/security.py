@@ -33,7 +33,7 @@ _SYNTHETIC_USERS: dict[str, dict[str, Any]] = {
             sub="REV-001",
             name="Dr. Sarah Chen, MD",
             role=UserRole.CLINICIAN_REVIEWER.value,
-            cases=["*"],
+            cases=["CASE-SYN-001", "CASE-SYN-002", "CASE-SYN-003"],
         ),
     },
     "dr_ross": {
@@ -51,7 +51,7 @@ _SYNTHETIC_USERS: dict[str, dict[str, Any]] = {
             sub="AUD-001",
             name="Jane Doe (Auditor)",
             role=UserRole.AUDITOR.value,
-            cases=["*"],
+            cases=["CASE-SYN-001", "CASE-SYN-002", "CASE-SYN-003"],
         ),
     },
     "admin_alex": {
@@ -91,6 +91,7 @@ def create_access_token(
         "iat": now,
         "exp": exp,
         "iss": settings.auth_issuer,
+        "aud": settings.auth_audience,
     }
 
     key = get_oct_key()
@@ -99,25 +100,53 @@ def create_access_token(
 
 
 def decode_access_token(token: str) -> TokenPayload:
-    """Decode and cryptographically verify a JWT access token."""
+    """Decode and cryptographically verify a JWT access token with full claims and algorithm validation."""
     if not token or not isinstance(token, str):
         raise InvalidTokenError("Authentication token is missing or empty.")
 
     key = get_oct_key()
     try:
-        token_obj = jwt.decode(token, key)
+        token_obj = jwt.decode(token, key, algorithms=[settings.auth_algorithm])
         claims = token_obj.claims
+        header = token_obj.header
     except (BadSignatureError, DecodeError) as exc:
         raise InvalidTokenError(f"Invalid token signature or encoding: {exc}") from exc
     except Exception as exc:
         raise InvalidTokenError(f"Failed to decode token: {exc}") from exc
 
+    # Enforce exact algorithm match
+    alg = header.get("alg")
+    if alg != settings.auth_algorithm:
+        raise InvalidTokenError(f"Token signed with unexpected algorithm '{alg}'. Expected '{settings.auth_algorithm}'.")
+
+    # Enforce issuer
+    iss = claims.get("iss")
+    if iss != settings.auth_issuer:
+        raise InvalidTokenError(f"Token issuer mismatch: got '{iss}', expected '{settings.auth_issuer}'.")
+
+    # Enforce audience
+    aud = claims.get("aud")
+    if aud != settings.auth_audience:
+        raise InvalidTokenError(f"Token audience mismatch: got '{aud}', expected '{settings.auth_audience}'.")
+
+    now = int(time.time())
+
+    # Enforce expiration
     exp = claims.get("exp")
-    if exp is None or int(exp) < int(time.time()):
+    if exp is None or int(exp) < now:
         raise TokenExpiredError("Authentication token has expired.")
 
+    # Enforce issued-at (prevent tokens issued in the future)
+    iat = claims.get("iat")
+    if iat is None or int(iat) > now + 60:
+        raise InvalidTokenError(f"Token issued in the future (iat={iat}, current={now}).")
+
     try:
-        return TokenPayload.model_validate(claims)
+        payload = TokenPayload.model_validate(claims)
+        # Ensure role is a valid UserRole
+        if payload.role not in (UserRole.CLINICIAN_REVIEWER, UserRole.ADMIN, UserRole.AUDITOR):
+            raise InvalidTokenError(f"Invalid user role in token: '{payload.role}'.")
+        return payload
     except Exception as exc:
         raise InvalidTokenError(f"Token claims schema mismatch: {exc}") from exc
 

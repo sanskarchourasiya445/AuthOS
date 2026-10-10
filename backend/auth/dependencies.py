@@ -65,8 +65,12 @@ def require_case_access(
     case_id: Annotated[str, Path(description="Case identifier to authorize")],
     user: Annotated[AuthenticatedUser, Depends(get_current_user)],
 ) -> AuthenticatedUser:
-    """Authorize actor access to the specific case ID."""
-    if user.role == UserRole.ADMIN.value or "*" in user.cases or case_id in user.cases:
+    # Administrator role possesses system-wide case access.
+    # Non-admin roles (clinician reviewers, auditors) require explicit assignment in user.cases.
+    if user.role == UserRole.ADMIN.value:
+        return user
+
+    if case_id in user.cases:
         return user
 
     raise HTTPException(

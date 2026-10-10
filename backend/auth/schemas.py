@@ -29,11 +29,12 @@ class TokenPayload(BaseModel):
 
     sub: str
     name: str
-    role: str
+    role: UserRole
     cases: list[str] = Field(default_factory=list)
     exp: int
     iat: int
     iss: str = "authos"
+    aud: str = "authos-api"
 
 
 class TokenRequest(BaseModel):

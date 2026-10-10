@@ -48,10 +48,9 @@ def list_cases(
     repo: Annotated[PostgresCaseRepository, Depends(get_repository)],
     user: Annotated[AuthenticatedUser, Depends(get_current_user)],
 ) -> list[Case]:
-    all_cases = repo.get_all_cases()
-    if user.role == UserRole.ADMIN.value or "*" in user.cases:
-        return all_cases
-    return [c for c in all_cases if c.case_id in user.cases]
+    if user.role == UserRole.ADMIN.value:
+        return repo.get_all_cases()
+    return repo.get_all_cases(allowed_case_ids=user.cases)
 
 
 @router.get(

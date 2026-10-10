@@ -78,7 +78,7 @@ class AuthenticationAndAuthorizationTests(unittest.TestCase):
             sub="REV-001",
             name="Dr. Sarah Chen, MD",
             role=UserRole.CLINICIAN_REVIEWER.value,
-            cases=["*"],
+            cases=["CASE-SYN-001", "CASE-SYN-002", "CASE-SYN-003"],
         )
         self.clinician_token = create_access_token(self.clinician_user)
 
@@ -94,9 +94,17 @@ class AuthenticationAndAuthorizationTests(unittest.TestCase):
             sub="AUD-001",
             name="Jane Doe (Auditor)",
             role=UserRole.AUDITOR.value,
-            cases=["*"],
+            cases=["CASE-SYN-001", "CASE-SYN-002", "CASE-SYN-003"],
         )
         self.auditor_token = create_access_token(self.auditor_user)
+
+        self.admin_user = AuthenticatedUser(
+            sub="ADM-001",
+            name="Alex Rivera (Admin)",
+            role=UserRole.ADMIN.value,
+            cases=["*"],
+        )
+        self.admin_token = create_access_token(self.admin_user)
 
     # 1. Unauthenticated requests rejected on protected endpoints
     def test_unauthenticated_request_rejected_on_cases_list(self):
