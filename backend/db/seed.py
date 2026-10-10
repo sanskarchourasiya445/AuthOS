@@ -4,6 +4,7 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 
 from backend.db.models import (
+    Base,
     CaseModel,
     CriterionResultModel,
     DocumentModel,
@@ -20,6 +21,7 @@ FIXTURES_PATH = ROOT / "contracts" / "mock_response.json"
 
 def seed_synthetic_data(session: Session) -> dict[str, int]:
     """Seed policies, documents, cases, and baseline criteria results idempotently."""
+    Base.metadata.create_all(bind=session.get_bind())
     counts = {"policies": 0, "criteria": 0, "documents": 0, "cases": 0, "results": 0}
 
     # 1. Seed canonical policy and criteria

@@ -579,8 +579,11 @@
         <span id="actorName">Authenticating...</span>
         <span class="role-badge" id="actorRoleBadge">-</span>
       </div>
-      <button class="btn-secondary" onclick="openLoginModal()" style="padding: 4px 10px; font-size: 0.75rem;">
+      <button class="btn-secondary" onclick="openLoginModal()" style="padding: 4px 10px; font-size: 0.75rem;" id="btnSwitchActor">
         Switch Actor / Login
+      </button>
+      <button class="btn-secondary" onclick="logout()" style="padding: 4px 10px; font-size: 0.75rem;" id="btnLogout">
+        Sign Out
       </button>
     </div>
   </header>
@@ -753,14 +756,19 @@
             <strong>Advisory AI Analysis Disclaimer:</strong> AI proposals are non-authoritative clinical draft suggestions. They do NOT mutate authoritative database criterion records. All decisions require human reviewer validation.
           </div>
         </div>
-        <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
           <span style="font-size: 0.875rem; font-weight: 600;" id="advisoryProviderLabel">Provider: Not yet executed for this session</span>
-          <button class="btn-primary" onclick="triggerClaimAnalysis()">
-            Run Advisory Analysis Now
-          </button>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn-primary" onclick="triggerClaimAnalysis('agent')" id="btnRunAgentWorkflow">
+              🤖 Run Multi-Agent Workflow
+            </button>
+            <button class="btn-secondary" onclick="triggerClaimAnalysis('deterministic')" id="btnRunSinglePass">
+              ⚡ Single-Pass Baseline
+            </button>
+          </div>
         </div>
         <div id="comparisonContainer">
-          <p style="color: var(--text-muted); font-size: 0.8125rem;">Click "Run Advisory Analysis Now" to compare deterministic ground truth against AI proposals.</p>
+          <p style="color: var(--text-muted); font-size: 0.8125rem;">Click "Run Multi-Agent Workflow" to execute bounded multi-agent retrieval and criterion analysis.</p>
         </div>
       </div>
 
@@ -777,10 +785,13 @@
           <div style="margin-bottom: 14px;">
             <label style="display: block; font-weight: 600; margin-bottom: 4px;">Adjudication Action:</label>
             <select id="finalActionSelect" style="width: 100%;">
-              <option value="approve_packet">Approve Packet for Clinician Signature (APPROVE_PACKET)</option>
+              <option value="approve_packet">Approve Internal Packet for Submission (APPROVE_PACKET)</option>
               <option value="request_edits">Request Additional Clinical Records (REQUEST_EDITS)</option>
               <option value="reject_packet">Reject Authorization Packet (REJECT_PACKET)</option>
             </select>
+            <div style="font-size: 0.6875rem; color: var(--text-muted); margin-top: 4px;">
+              Note: Packet approval signifies provider-side internal validation for submission, not a payer coverage decision.
+            </div>
           </div>
 
           <div style="margin-bottom: 16px;">
@@ -844,7 +855,7 @@
       </p>
 
       <div class="persona-grid">
-        <div class="persona-btn" onclick="loginAs('dr_chen')">
+        <div class="persona-btn" onclick="loginAs('dr_chen')" onkeydown="if(event.key==='Enter'||event.key===' ')loginAs('dr_chen')" tabindex="0" role="button">
           <div>
             <strong>Dr. Sarah Chen, MD</strong>
             <div style="font-size: 0.75rem; color: var(--text-muted);">Clinician Reviewer (All Cases)</div>
@@ -852,7 +863,7 @@
           <span class="role-badge role-reviewer">REVIEWER</span>
         </div>
 
-        <div class="persona-btn" onclick="loginAs('dr_ross')">
+        <div class="persona-btn" onclick="loginAs('dr_ross')" onkeydown="if(event.key==='Enter'||event.key===' ')loginAs('dr_ross')" tabindex="0" role="button">
           <div>
             <strong>Dr. Allison Ross, MD</strong>
             <div style="font-size: 0.75rem; color: var(--text-muted);">Clinician Reviewer (CASE-SYN-001 Only)</div>
@@ -860,7 +871,7 @@
           <span class="role-badge role-reviewer">REVIEWER</span>
         </div>
 
-        <div class="persona-btn" onclick="loginAs('auditor_jane')">
+        <div class="persona-btn" onclick="loginAs('auditor_jane')" onkeydown="if(event.key==='Enter'||event.key===' ')loginAs('auditor_jane')" tabindex="0" role="button">
           <div>
             <strong>Jane Doe</strong>
             <div style="font-size: 0.75rem; color: var(--text-muted);">Auditor (Read-Only Observer)</div>
@@ -868,7 +879,7 @@
           <span class="role-badge role-auditor">AUDITOR</span>
         </div>
 
-        <div class="persona-btn" onclick="loginAs('admin_alex')">
+        <div class="persona-btn" onclick="loginAs('admin_alex')" onkeydown="if(event.key==='Enter'||event.key===' ')loginAs('admin_alex')" tabindex="0" role="button">
           <div>
             <strong>Alex Rivera</strong>
             <div style="font-size: 0.75rem; color: var(--text-muted);">System Administrator (Full Access)</div>
@@ -1051,6 +1062,17 @@
       } catch (err) {
         showToast(err.message, true);
       }
+    }
+
+    function logout() {
+      currentAuthToken = null;
+      currentUserProfile = null;
+      document.getElementById('actorName').innerText = 'Unauthenticated';
+      const roleBadge = document.getElementById('actorRoleBadge');
+      roleBadge.innerText = 'NONE';
+      roleBadge.className = 'role-badge';
+      showToast('Signed out successfully.');
+      openLoginModal();
     }
 
     // Case Queue (Screen 2)
@@ -1385,10 +1407,11 @@
     }
 
     // Screen 6: Advisory vs Authoritative Diff
-    async function triggerClaimAnalysis() {
+    async function triggerClaimAnalysis(mode = 'agent') {
       try {
-        showToast("Running advisory AI claim analysis...");
-        const res = await authFetch(`/api/v1/cases/${activeCaseId}/claim-analysis`, { method: 'POST' });
+        const modeLabel = mode === 'agent' ? 'multi-agent workflow' : 'single-pass analyzer';
+        showToast(`Running ${modeLabel}...`);
+        const res = await authFetch(`/api/v1/cases/${activeCaseId}/claim-analysis?mode=${mode}`, { method: 'POST' });
         if (!res.ok) {
           const msg = await parseErrorMessage(res, "Claim analysis failed");
           throw new Error(msg);
@@ -1396,7 +1419,7 @@
         activeAdvisoryAnalysis = await res.json();
         renderComparisonView();
         showWsSubView('wsAdvisoryView');
-        showToast("Advisory claim analysis generated.");
+        showToast(`Advisory analysis completed (${modeLabel}).`);
       } catch (err) {
         showToast(err.message, true);
       }

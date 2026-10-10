@@ -75,3 +75,26 @@ CREATE TABLE IF NOT EXISTS audit_log (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS ix_audit_log_case_id ON audit_log(case_id);
+
+-- Advisory Multi-Agent Workflow Proposals (Phase 8)
+CREATE TABLE IF NOT EXISTS agent_proposals (
+    id SERIAL PRIMARY KEY,
+    case_id VARCHAR(64) NOT NULL REFERENCES cases(case_id) ON DELETE CASCADE,
+    run_id VARCHAR(64) NOT NULL,
+    criterion_id VARCHAR(32) NOT NULL,
+    proposed_status VARCHAR(32) NOT NULL,
+    confidence FLOAT NOT NULL DEFAULT 0.0,
+    uncertainty_rationale TEXT NOT NULL,
+    evidence_quotes JSONB NOT NULL DEFAULT '[]'::jsonb,
+    missing_facts JSONB NOT NULL DEFAULT '[]'::jsonb,
+    detected_gaps JSONB NOT NULL DEFAULT '[]'::jsonb,
+    retrieval_rounds INT NOT NULL DEFAULT 1,
+    is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    verification_feedback JSONB,
+    flags JSONB NOT NULL DEFAULT '[]'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_case_run_criterion UNIQUE (case_id, run_id, criterion_id)
+);
+CREATE INDEX IF NOT EXISTS ix_agent_proposals_case_id ON agent_proposals(case_id);
+CREATE INDEX IF NOT EXISTS ix_agent_proposals_run_id ON agent_proposals(run_id);
+

@@ -13,6 +13,8 @@ from backend.auth.schemas import AuthenticatedUser, UserRole
 from backend.db.models import DocumentChunkModel, DocumentModel
 from backend.db.repository import PostgresCaseRepository
 from contracts.schemas import (
+    AIClaimProposal,
+    AgentWorkflowResponse,
     Case,
     CaseResultsResponse,
     ClaimAnalysisResponse,
@@ -262,7 +264,8 @@ def ingest_document_endpoint(
 def claim_analysis_endpoint(
     case_id: str,
     repo: Annotated[PostgresCaseRepository, Depends(get_repository)],
-    _user: Annotated[AuthenticatedUser, Depends(require_case_access)],
+    user: Annotated[AuthenticatedUser, Depends(require_case_access)],
+    mode: str = Query("deterministic", description="Execution mode: 'deterministic' or 'agent'"),
 ) -> ClaimAnalysisResponse:
     case = repo.get_case(case_id)
     if not case:
@@ -272,11 +275,41 @@ def claim_analysis_endpoint(
         )
     with repo._session_factory() as session:
         try:
-            from backend.analysis.service import DeterministicClaimAnalyzer
-            analyzer = DeterministicClaimAnalyzer()
-            response = analyzer.analyze_claims(session, case_id=case_id)
-            session.commit()
-            return response
+            if mode == "agent":
+                from backend.agent.orchestrator import AgentOrchestrator
+                orchestrator = AgentOrchestrator()
+                agent_resp = orchestrator.run_case_workflow(session, case_id=case_id, actor_name=user.name)
+                session.commit()
+                # Map agent proposals to standard ClaimAnalysisResponse
+                proposals = [
+                    AIClaimProposal(
+                        criterion_id=p.criterion_id,
+                        proposed_status=p.proposed_status,
+                        confidence=p.confidence,
+                        evidence_quotes=p.evidence_quotes,
+                        missing_facts=p.missing_facts,
+                        detected_gaps=p.detected_gaps,
+                        uncertainty_rationale=p.uncertainty_rationale,
+                        is_ai_generated=True,
+                        flags=p.flags + ["AGENT_ORCHESTRATED", f"VERIFIED_BY_GATE:{p.is_verified_by_boundary}"],
+                    )
+                    for p in agent_resp.proposals
+                ]
+                return ClaimAnalysisResponse(
+                    case_id=case_id,
+                    patient_id=case.patient_id,
+                    policy_id=case.policy_id,
+                    analyzer_provider=f"MULTI_AGENT_WORKFLOW ({agent_resp.execution_metadata.provider})",
+                    proposals=proposals,
+                    disclaimer=agent_resp.disclaimer,
+                    generated_at=agent_resp.created_at,
+                )
+            else:
+                from backend.analysis.service import DeterministicClaimAnalyzer
+                analyzer = DeterministicClaimAnalyzer()
+                response = analyzer.analyze_claims(session, case_id=case_id)
+                session.commit()
+                return response
         except ValueError as exc:
             session.rollback()
             raise HTTPException(
@@ -289,6 +322,44 @@ def claim_analysis_endpoint(
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail={"code": ErrorCode.INTERNAL_ERROR.value, "message": "Failed to run claim analysis."},
+            )
+
+
+@router.post(
+    "/cases/{case_id}/agent-workflow",
+    summary="Trigger bounded multi-agent evidence retrieval and criterion analysis",
+    response_model=AgentWorkflowResponse,
+)
+def agent_workflow_endpoint(
+    case_id: str,
+    repo: Annotated[PostgresCaseRepository, Depends(get_repository)],
+    user: Annotated[AuthenticatedUser, Depends(require_case_access)],
+) -> AgentWorkflowResponse:
+    case = repo.get_case(case_id)
+    if not case:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": ErrorCode.CASE_NOT_FOUND.value, "message": f"Case '{case_id}' was not found."},
+        )
+    with repo._session_factory() as session:
+        try:
+            from backend.agent.orchestrator import AgentOrchestrator
+            orchestrator = AgentOrchestrator()
+            response = orchestrator.run_case_workflow(session, case_id=case_id, actor_name=user.name)
+            session.commit()
+            return response
+        except ValueError as exc:
+            session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"code": ErrorCode.CLAIM_ANALYSIS_FAILED.value, "message": str(exc)},
+            )
+        except Exception as e:
+            session.rollback()
+            logger.error("Error running agent workflow for case %s: %s", case_id, type(e).__name__, exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail={"code": ErrorCode.INTERNAL_ERROR.value, "message": "Failed to run agent workflow."},
             )
 
 

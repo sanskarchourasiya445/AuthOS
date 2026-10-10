@@ -4,6 +4,7 @@ from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
+    Float,
     ForeignKey,
     Integer,
     JSON,
@@ -83,6 +84,7 @@ class CaseModel(Base):
     policy = relationship("PolicyModel", back_populates="cases")
     criterion_results = relationship("CriterionResultModel", back_populates="case", cascade="all, delete-orphan")
     audit_entries = relationship("AuditLogModel", back_populates="case", cascade="all, delete-orphan")
+    agent_proposals = relationship("AgentProposalModel", back_populates="case", cascade="all, delete-orphan")
 
 
 class CriterionResultModel(Base):
@@ -168,4 +170,32 @@ class DocumentChunkModel(Base):
     )
 
     document = relationship("DocumentModel", back_populates="chunks")
+
+
+class AgentProposalModel(Base):
+    """Persisted advisory proposal from the multi-agent workflow, strictly separated from authoritative records."""
+    __tablename__ = "agent_proposals"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    case_id = Column(String(64), ForeignKey("cases.case_id", ondelete="CASCADE"), nullable=False, index=True)
+    run_id = Column(String(64), nullable=False, index=True)
+    criterion_id = Column(String(32), nullable=False)
+    proposed_status = Column(String(32), nullable=False)
+    confidence = Column(Float, nullable=False, default=0.0)
+    uncertainty_rationale = Column(Text, nullable=False)
+    evidence_quotes = Column(JSON, nullable=False, default=list)
+    missing_facts = Column(JSON, nullable=False, default=list)
+    detected_gaps = Column(JSON, nullable=False, default=list)
+    retrieval_rounds = Column(Integer, nullable=False, default=1)
+    is_verified = Column(Boolean, nullable=False, default=False)
+    verification_feedback = Column(JSON, nullable=True)
+    flags = Column(JSON, nullable=False, default=list)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("case_id", "run_id", "criterion_id", name="uq_case_run_criterion"),
+    )
+
+    case = relationship("CaseModel", back_populates="agent_proposals")
+
 

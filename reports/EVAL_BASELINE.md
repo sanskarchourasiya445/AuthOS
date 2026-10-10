@@ -6,8 +6,8 @@
 > **NOT** clinical efficacy, medical necessity decisions, or real-world prior-authorization approval accuracy.
 
 - **Dataset Version:** `eval-dataset-v1.0`
-- **Execution Timestamp:** `2026-10-10T04:42:11.585755+00:00`
-- **Git Commit:** `e380d70ad027c3f36a1f5b0c6f66e628621425f0` (Branch: `main`, Dirty: `true`)
+- **Execution Timestamp:** `2026-10-10T05:03:06.335832+00:00`
+- **Git Commit:** `54685211436ea2dc6f95bcda6a80d454a0239663` (Branch: `main`, Dirty: `true`)
 - **Environment:** `Windows-11-10.0.26300-SP0`, Python `3.13.1`
 
 ## 1. Executive Summary & Mandatory Safety Gates
@@ -76,11 +76,11 @@ Evaluated across `10` synthetic queries at `k=3`:
 
 | Retrieval Method | Precision@k | Recall@k | MRR | Empty-Result Rate (Safety) | Irrelevant Cand. Rate | Mean Latency | Median Latency | Safety Verdict |
 |---|---|---|---|---|---|---|---|---|
-| **BM25 (Baseline)** | 0.5476 | 0.8571 | 0.7619 | 3/3 (100.0%) | 0.0% | 0.93 ms | 0.72 ms | ✅ PASS |
-| **BM25 (Bounded Corrective)** | 0.6190 | 1.0000 | 0.9048 | 3/3 (100.0%) | 0.0% | 0.95 ms | 0.8 ms | ✅ PASS |
-| **Dense (Raw Cosine)** | 0.3809 | 1.0000 | 1.0000 | 0/3 (0.0%) | 100.0% | 72.36 ms | 44.52 ms | ❌ FAIL |
-| **Dense (Calibrated min_score=0.70)** | 0.7619 | 0.8571 | 0.8571 | 3/3 (100.0%) | 0.0% | 37.91 ms | 37.14 ms | ✅ PASS |
-| **Hybrid (BM25 + Dense RRF)** | 0.3809 | 1.0000 | 0.9286 | 0/3 (0.0%) | 100.0% | 37.73 ms | 37.28 ms | ❌ FAIL |
+| **BM25 (Baseline)** | 0.5476 | 0.8571 | 0.7619 | 3/3 (100.0%) | 0.0% | 0.82 ms | 0.74 ms | ✅ PASS |
+| **BM25 (Bounded Corrective)** | 0.6190 | 1.0000 | 0.9048 | 3/3 (100.0%) | 0.0% | 0.9 ms | 0.76 ms | ✅ PASS |
+| **Dense (Raw Cosine)** | 0.3809 | 1.0000 | 1.0000 | 0/3 (0.0%) | 100.0% | 50.39 ms | 33.66 ms | ❌ FAIL |
+| **Dense (Calibrated min_score=0.70)** | 0.7619 | 0.8571 | 0.8571 | 3/3 (100.0%) | 0.0% | 33.76 ms | 33.71 ms | ✅ PASS |
+| **Hybrid (BM25 + Dense RRF)** | 0.3809 | 1.0000 | 0.9286 | 0/3 (0.0%) | 100.0% | 33.88 ms | 34.09 ms | ❌ FAIL |
 
 ### 3.2 Per-Query Breakdown (BM25 vs Bounded Corrective vs Dense)
 

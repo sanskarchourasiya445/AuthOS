@@ -305,3 +305,49 @@ class PatientDocumentDetail(SchemaBase):
     chunks_count: int = 0
     created_at: str
 
+
+class AgentExecutionMetadata(SchemaBase):
+    """Execution telemetry and budget consumption for an orchestrated multi-agent run."""
+    run_id: str
+    provider: str = Field(description="Agent execution provider (e.g. DETERMINISTIC_AGENT_STUB, LLM_PROVIDER)")
+    is_external_llm: bool = Field(default=False, description="Whether real external LLM API was invoked")
+    latency_ms: float = Field(ge=0.0, description="End-to-end execution wall-clock time in milliseconds")
+    retries_attempted: int = Field(ge=0, description="Total corrective retry iterations across all criteria")
+    max_retries_budget: int = Field(ge=0, description="Maximum permitted retries per criterion")
+    time_budget_sec: float = Field(ge=0.0, description="Configured timeout budget in seconds")
+    steps_executed: list[str] = Field(default_factory=list, description="Sequence of logical agent steps executed")
+    safety_flags: list[str] = Field(default_factory=list, description="Safety, diagnostic, or security flags encountered")
+
+
+class AgentCriterionProposal(SchemaBase):
+    """Advisory criterion proposal output by the multi-agent workflow, gated by deterministic verifier."""
+    criterion_id: str
+    proposed_status: CriterionStatus
+    confidence: Annotated[float, Field(ge=0.0, le=1.0)]
+    evidence_quotes: list[EvidenceItem] = Field(default_factory=list)
+    missing_facts: list[str] = Field(default_factory=list)
+    detected_gaps: list[str] = Field(default_factory=list)
+    uncertainty_rationale: str
+    retrieval_rounds: int = Field(default=1, ge=1)
+    is_verified_by_boundary: bool = Field(default=False, description="Whether deterministic verification gate approved citations")
+    boundary_feedback: dict[str, Any] | None = Field(default=None, description="Detailed feedback from deterministic verification boundary")
+    is_ai_generated: bool = Field(default=True, description="Marker confirming advisory AI provenance")
+    flags: list[str] = Field(default_factory=list)
+
+
+class AgentWorkflowResponse(SchemaBase):
+    """Structured response returned by the multi-agent orchestration endpoint."""
+    case_id: str
+    patient_id: str
+    policy_id: str
+    run_id: str
+    status: str = Field(description="Workflow outcome: SUCCESS, ABSTAINED, PARTIAL, or FAILED")
+    proposals: list[AgentCriterionProposal]
+    execution_metadata: AgentExecutionMetadata
+    disclaimer: str = (
+        "Multi-agent workflow output is advisory only. Not authoritative. Final determination requires clinician signature. "
+        "Authoritative criterion results remain strictly guarded by deterministic verification."
+    )
+    created_at: str
+
+

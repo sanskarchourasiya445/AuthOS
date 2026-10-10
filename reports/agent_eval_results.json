@@ -1,0 +1,65 @@
+{
+  "timestamp": "2026-10-10T05:03:20.771034+00:00",
+  "dataset_version": "eval-dataset-v1.0",
+  "total_test_cases": 34,
+  "external_llm_used": false,
+  "llm_status_note": "No external LLM provider configured; evaluated using explicit deterministic stubs.",
+  "pipelines": {
+    "baseline_bm25": {
+      "method_name": "Baseline BM25 + Verifier",
+      "provider": "DETERMINISTIC_RULES",
+      "total_evaluations": 34,
+      "correct_statuses": 34,
+      "accuracy": 1.0,
+      "unsupported_met_proposals_before_gate": 0,
+      "false_positive_met_after_gate": 0,
+      "cross_patient_violations": 0,
+      "citation_validity_rate": 0.9474,
+      "abstention_rate_on_missing": 1.0,
+      "contradiction_detection_rate": 1.0,
+      "avg_latency_ms": 0.2,
+      "estimated_cost_usd": 0.0,
+      "failure_count": 0,
+      "repeatability_score": 1.0
+    },
+    "single_pass_analyzer": {
+      "method_name": "Single-Pass Deterministic Analyzer",
+      "provider": "DETERMINISTIC_FALLBACK (RULE_BASED)",
+      "total_evaluations": 34,
+      "correct_statuses": 4,
+      "accuracy": 0.1176,
+      "unsupported_met_proposals_before_gate": 21,
+      "false_positive_met_after_gate": 0,
+      "cross_patient_violations": 0,
+      "citation_validity_rate": 1.0,
+      "abstention_rate_on_missing": 0.9,
+      "contradiction_detection_rate": 0.0,
+      "avg_latency_ms": 5.19,
+      "estimated_cost_usd": 0.0,
+      "failure_count": 0,
+      "repeatability_score": 1.0
+    },
+    "multi_agent_workflow": {
+      "method_name": "Phase 8 Multi-Agent + Gate",
+      "provider": "DETERMINISTIC_AGENT_STUB",
+      "total_evaluations": 34,
+      "correct_statuses": 14,
+      "accuracy": 0.4118,
+      "unsupported_met_proposals_before_gate": 5,
+      "false_positive_met_after_gate": 3,
+      "cross_patient_violations": 0,
+      "citation_validity_rate": 0.4853,
+      "abstention_rate_on_missing": 0.3,
+      "contradiction_detection_rate": 0.2857,
+      "avg_latency_ms": 1.04,
+      "estimated_cost_usd": 0.0,
+      "failure_count": 0,
+      "repeatability_score": 1.0
+    }
+  },
+  "safety_invariants": {
+    "false_positive_met_after_gate_is_zero": false,
+    "cross_patient_violations_is_zero": true,
+    "deterministic_repeatability": true
+  }
+}
