@@ -291,7 +291,7 @@ def calculate_retrieval_metrics(
         mrr=mean_mrr,
         cross_patient_violations=cross_patient_violations,
         all_safety_checks_passed=all_safety_passed,
-        latency_ms={"mean": mean_lat, "min": min_lat, "max": max_lat},
+        latency_ms={"mean": mean_lat, "median": median_lat, "min": min_lat, "max": max_lat},
         is_deterministic=is_deterministic,
         case_results=case_results,
     )

@@ -18,6 +18,7 @@ from backend.db.models import (
     DocumentModel,
     PolicyCriterionModel,
 )
+from backend.config import settings
 from backend.db.repository import PostgresCaseRepository
 from backend.rag.retrieval import retrieve_chart_candidates
 from backend.verification.engine import verify_criterion_evidence
@@ -66,6 +67,8 @@ def evaluate_case(case_id: str, session: Session) -> ReviewPacket:
             patient_id=case.patient_id,
             query=query,
             top_k=5,
+            corrective=settings.enable_corrective_retrieval,
+            max_retries=settings.max_retrieval_retries,
         )
 
         candidate_items = [

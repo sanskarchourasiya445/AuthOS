@@ -10,12 +10,18 @@ from backend.auth.dependencies import (
     require_reviewer_role,
 )
 from backend.auth.schemas import AuthenticatedUser, UserRole
+from backend.db.models import DocumentChunkModel, DocumentModel
 from backend.db.repository import PostgresCaseRepository
 from contracts.schemas import (
     Case,
     CaseResultsResponse,
+    ClaimAnalysisResponse,
+    DocumentIngestRequest,
+    DocumentIngestResponse,
     ErrorCode,
     FinalizationActionRequest,
+    PatientDocumentDetail,
+    PatientDocumentSummary,
     ReviewActionRequest,
     ReviewActionResponse,
     ReviewPacket,
@@ -192,3 +198,188 @@ def evaluate_case_endpoint(
                     "message": f"An unexpected internal error occurred while evaluating case '{case_id}'.",
                 },
             )
+
+
+@router.post(
+    "/cases/{case_id}/documents",
+    summary="Safely ingest a patient chart document for a case",
+    response_model=DocumentIngestResponse,
+)
+def ingest_document_endpoint(
+    case_id: str,
+    request: DocumentIngestRequest,
+    repo: Annotated[PostgresCaseRepository, Depends(get_repository)],
+    user: Annotated[AuthenticatedUser, Depends(require_case_access)],
+    _reviewer: Annotated[AuthenticatedUser, Depends(require_reviewer_role)],
+) -> DocumentIngestResponse:
+    case = repo.get_case(case_id)
+    if not case:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": ErrorCode.CASE_NOT_FOUND.value, "message": f"Case '{case_id}' was not found."},
+        )
+    with repo._session_factory() as session:
+        try:
+            from backend.ingest.service import ingest_document_safe
+            actor = f"{user.name} ({user.sub})"
+            resp = ingest_document_safe(
+                session,
+                request,
+                expected_patient_id=case.patient_id,
+                actor=actor,
+                case_id=case_id,
+            )
+            session.commit()
+            return resp
+        except ValueError as exc:
+            session.rollback()
+            msg = str(exc)
+            err_code = ErrorCode.VALIDATION_ERROR.value
+            if "Cross-patient" in msg or "cannot be reassigned" in msg:
+                err_code = ErrorCode.ACCESS_DENIED.value
+            elif "Unsupported document format" in msg:
+                err_code = ErrorCode.INVALID_DOCUMENT_FORMAT.value
+            elif "maximum allowed size" in msg:
+                err_code = ErrorCode.DOCUMENT_SIZE_EXCEEDED.value
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"code": err_code, "message": msg},
+            )
+        except Exception as e:
+            session.rollback()
+            logger.error("Error ingesting document for case %s: %s", case_id, type(e).__name__, exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail={"code": ErrorCode.INTERNAL_ERROR.value, "message": "Failed to ingest document."},
+            )
+
+
+@router.post(
+    "/cases/{case_id}/claim-analysis",
+    summary="Trigger advisory AI-assisted claim analysis for a case",
+    response_model=ClaimAnalysisResponse,
+)
+def claim_analysis_endpoint(
+    case_id: str,
+    repo: Annotated[PostgresCaseRepository, Depends(get_repository)],
+    _user: Annotated[AuthenticatedUser, Depends(require_case_access)],
+) -> ClaimAnalysisResponse:
+    case = repo.get_case(case_id)
+    if not case:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": ErrorCode.CASE_NOT_FOUND.value, "message": f"Case '{case_id}' was not found."},
+        )
+    with repo._session_factory() as session:
+        try:
+            from backend.analysis.service import DeterministicClaimAnalyzer
+            analyzer = DeterministicClaimAnalyzer()
+            response = analyzer.analyze_claims(session, case_id=case_id)
+            session.commit()
+            return response
+        except ValueError as exc:
+            session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"code": ErrorCode.CLAIM_ANALYSIS_FAILED.value, "message": str(exc)},
+            )
+        except Exception as e:
+            session.rollback()
+            logger.error("Error running claim analysis for case %s: %s", case_id, type(e).__name__, exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail={"code": ErrorCode.INTERNAL_ERROR.value, "message": "Failed to run claim analysis."},
+            )
+
+
+@router.get(
+    "/cases/{case_id}/documents",
+    summary="List patient documents for a case",
+    response_model=list[PatientDocumentSummary],
+)
+def list_case_documents(
+    case_id: str,
+    repo: Annotated[PostgresCaseRepository, Depends(get_repository)],
+    _user: Annotated[AuthenticatedUser, Depends(require_case_access)],
+) -> list[PatientDocumentSummary]:
+    case = repo.get_case(case_id)
+    if not case:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": ErrorCode.CASE_NOT_FOUND.value, "message": f"Case '{case_id}' was not found."},
+        )
+    with repo._session_factory() as session:
+        docs = (
+            session.query(DocumentModel)
+            .filter_by(patient_id=case.patient_id)
+            .order_by(DocumentModel.doc_date.desc(), DocumentModel.created_at.desc())
+            .all()
+        )
+        summaries: list[PatientDocumentSummary] = []
+        for doc in docs:
+            chunk_cnt = (
+                session.query(DocumentChunkModel)
+                .filter_by(source_id=doc.source_id)
+                .count()
+            )
+            summaries.append(
+                PatientDocumentSummary(
+                    source_id=doc.source_id,
+                    patient_id=doc.patient_id,
+                    doc_date=doc.doc_date,
+                    character_count=len(doc.text),
+                    chunks_count=chunk_cnt,
+                    created_at=doc.created_at.isoformat(),
+                )
+            )
+        return summaries
+
+
+@router.get(
+    "/cases/{case_id}/documents/{source_id}",
+    summary="Retrieve full raw patient document by source_id with patient isolation",
+    response_model=PatientDocumentDetail,
+)
+def get_case_document(
+    case_id: str,
+    source_id: str,
+    repo: Annotated[PostgresCaseRepository, Depends(get_repository)],
+    _user: Annotated[AuthenticatedUser, Depends(require_case_access)],
+) -> PatientDocumentDetail:
+    case = repo.get_case(case_id)
+    if not case:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": ErrorCode.CASE_NOT_FOUND.value, "message": f"Case '{case_id}' was not found."},
+        )
+    with repo._session_factory() as session:
+        doc = session.query(DocumentModel).filter_by(source_id=source_id).first()
+        if not doc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"code": ErrorCode.VALIDATION_ERROR.value, "message": f"Document '{source_id}' was not found."},
+            )
+        if doc.patient_id != case.patient_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "code": ErrorCode.ACCESS_DENIED.value,
+                    "message": f"Access denied: Document does not belong to case patient.",
+                },
+            )
+        chunk_cnt = (
+            session.query(DocumentChunkModel)
+            .filter_by(source_id=doc.source_id)
+            .count()
+        )
+        return PatientDocumentDetail(
+            source_id=doc.source_id,
+            patient_id=doc.patient_id,
+            doc_date=doc.doc_date,
+            text=doc.text,
+            character_count=len(doc.text),
+            chunks_count=chunk_cnt,
+            created_at=doc.created_at.isoformat(),
+        )
+
+

@@ -76,6 +76,18 @@ class BoundedCorrectiveRetrievalTests(unittest.TestCase):
             chunk_ids = [c.chunk_id for c in cands]
             self.assertEqual(len(chunk_ids), len(set(chunk_ids)), "Chunks must be deduplicated")
 
+    def test_candidate_capping_strict_top_k(self):
+        """Candidate count must strictly equal top_k when more candidates are available."""
+        with self.SessionLocal() as session:
+            cands, _ = retrieve_chart_candidates_bounded_corrective(
+                session,
+                patient_id="SYN-P001",
+                query="persistent low back pain physical therapy",
+                top_k=1,
+                max_retries=2,
+            )
+            self.assertEqual(len(cands), 1)
+
     def test_early_stop_condition_on_initial_hit(self):
         """If attempt 0 returns candidates, the corrective loop must terminate immediately."""
         with self.SessionLocal() as session:
@@ -217,3 +229,124 @@ class BoundedCorrectiveRetrievalTests(unittest.TestCase):
             self.assertNotEqual(res.status, CriterionStatus.MET)
             self.assertFalse(res.verified)
             self.assertEqual(res.status, CriterionStatus.CONTRADICTED)
+
+    def test_empty_query_and_whitespace_abstention(self):
+        """Empty queries, pure whitespace, or nonexistent patient IDs must abstain with 0 candidates."""
+        with self.SessionLocal() as session:
+            for bad_query in ["", "   ", "\t\r\n", "   \n "]:
+                cands, audit = retrieve_chart_candidates_bounded_corrective(
+                    session,
+                    patient_id="SYN-P001",
+                    query=bad_query,
+                    top_k=3,
+                    max_retries=2,
+                )
+                self.assertEqual(len(cands), 0)
+                self.assertEqual(audit.candidates, [])
+
+            # Nonexistent patient ID
+            cands_none, audit_none = retrieve_chart_candidates_bounded_corrective(
+                session,
+                patient_id="NONEXISTENT-PATIENT",
+                query="physical therapy persistent symptoms",
+                top_k=3,
+                max_retries=2,
+            )
+            self.assertEqual(len(cands_none), 0)
+
+    def test_attempt_budget_exhaustion_graceful(self):
+        """Attempt budget exhaustion must record all history and never raise exceptions."""
+        with self.SessionLocal() as session:
+            # Query that cannot match even after rewrites
+            cands, audit = retrieve_chart_candidates_bounded_corrective(
+                session,
+                patient_id="SYN-P001",
+                query="unobtainium superconducting particle physics",
+                top_k=3,
+                max_retries=2,
+            )
+            self.assertEqual(len(cands), 0)
+            self.assertLessEqual(audit.attempts_executed, 3)
+            self.assertEqual(audit.total_attempts_budget, 3)
+            self.assertTrue(len(audit.history) > 0)
+            self.assertTrue(audit.history[-1].stopped)
+
+    def test_candidate_retrieval_alone_never_sets_met_in_workflow(self):
+        """Retrieving candidates alone must never produce MET status in workflow or DB."""
+        from backend.workflow.evaluator import evaluate_case
+        from backend.db.models import CriterionResultModel
+
+        with self.SessionLocal() as session:
+            # Evaluate SYN-P003 (declined PT)
+            packet = evaluate_case("CASE-SYN-003", session)
+            self.assertIsNotNone(packet)
+
+            # In the DB, C2 must NOT be MET
+            c2_res = (
+                session.query(CriterionResultModel)
+                .filter_by(case_id="CASE-SYN-003", criterion_id="C2")
+                .first()
+            )
+            self.assertIsNotNone(c2_res)
+            self.assertNotEqual(c2_res.status, "MET")
+            self.assertFalse(c2_res.verified)
+            self.assertEqual(c2_res.status, "CONTRADICTED")
+
+    def test_invalid_max_retries_raises_value_error(self):
+        """Values of max_retries < 0 or > 5 must raise ValueError."""
+        with self.SessionLocal() as session:
+            with self.assertRaises(ValueError):
+                retrieve_chart_candidates_bounded_corrective(
+                    session, patient_id="SYN-P001", query="test query", max_retries=-1
+                )
+            with self.assertRaises(ValueError):
+                retrieve_chart_candidates_bounded_corrective(
+                    session, patient_id="SYN-P001", query="test query", max_retries=6
+                )
+
+    def test_root_keyword_extraction_when_synonym_rewrite_inapplicable(self):
+        """When Attempt 1 has no synonym rule, loop must advance to Attempt 2 root keyword extraction."""
+        with self.SessionLocal() as session:
+            # Query has stopwords and off-domain terms that do not trigger any synonym rule
+            query = "unobtainium particle physics with attended sessions"
+            cands, audit = retrieve_chart_candidates_bounded_corrective(
+                session,
+                patient_id="SYN-P001",
+                query=query,
+                top_k=3,
+                max_retries=2,
+            )
+            self.assertEqual(len(cands), 0)
+
+            # Reconciled execution: Attempt 0 ran, Attempt 1 recorded no rewrite, Attempt 2 extracted root keywords
+            self.assertEqual(audit.attempts_executed, 3)
+            self.assertEqual(len(audit.history), 3)
+            self.assertFalse(audit.history[0].stopped)
+            self.assertFalse(audit.history[1].stopped)
+            self.assertEqual(audit.history[1].reason, "No deterministic rewrite rule applicable for attempt 1")
+            self.assertTrue(audit.history[2].stopped)
+            self.assertEqual(audit.history[2].query_used, "unobtainium particle physics sessions")
+            self.assertEqual(audit.history[2].reason, "Corrective retry 2 returned 0 candidates")
+
+    def test_settings_validates_max_retrieval_retries(self):
+        """Settings must validate max_retrieval_retries limits and default enable_corrective_retrieval to False."""
+        from pydantic import ValidationError
+        from backend.config import Settings
+
+        # Default configuration
+        s_default = Settings()
+        self.assertFalse(s_default.enable_corrective_retrieval)
+        self.assertEqual(s_default.max_retrieval_retries, 2)
+
+        # Valid custom limits
+        s_valid = Settings(max_retrieval_retries=4, enable_corrective_retrieval=True)
+        self.assertEqual(s_valid.max_retrieval_retries, 4)
+        self.assertTrue(s_valid.enable_corrective_retrieval)
+
+        # Invalid bounds (< 0 or > 5)
+        with self.assertRaises(ValidationError):
+            Settings(max_retrieval_retries=-1)
+        with self.assertRaises(ValidationError):
+            Settings(max_retrieval_retries=10)
+
+

@@ -1,4 +1,5 @@
 """AuthOS application configuration."""
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -12,7 +13,8 @@ class Settings(BaseSettings):
 
     app_env: str = "development"
     api_prefix: str = "/api/v1"
-    max_retrieval_retries: int = 2
+    enable_corrective_retrieval: bool = False
+    max_retrieval_retries: int = Field(default=2, ge=0, le=5, description="Maximum number of corrective retrieval retries")
     database_url: str = "postgresql+psycopg2://authos@localhost:5433/authos"
 
     # Authentication & Security

@@ -3,28 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AuthOS — Evidence Reviewer Desk</title>
+  <title>AuthOS — Clinical Evidence Reviewer Workstation</title>
   <style>
     :root {
       --bg: #f8fafc;
       --card-bg: #ffffff;
       --border: #e2e8f0;
+      --border-dark: #cbd5e1;
       --text: #0f172a;
       --text-muted: #64748b;
-      --primary: #2563eb;
+      --primary: #1e40af;
       --primary-hover: #1d4ed8;
+      --primary-subtle: #eff6ff;
       --success: #15803d;
       --success-bg: #dcfce7;
       --warning: #b45309;
       --warning-bg: #fef3c7;
       --danger: #b91c1c;
       --danger-bg: #fee2e2;
-      --neutral-badge: #64748b;
+      --neutral-badge: #475569;
       --neutral-bg: #f1f5f9;
+      --highlight: #fef08a;
+      --highlight-border: #ca8a04;
       --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       --radius: 8px;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
       --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -33,105 +39,133 @@
       background-color: var(--bg);
       color: var(--text);
       line-height: 1.5;
-      padding: 24px;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
 
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
+    /* Header & Navigation Bar */
     header {
+      background: #0f172a;
+      color: white;
+      padding: 12px 24px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding-bottom: 16px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 20px;
+      border-bottom: 2px solid #1e293b;
     }
 
-    .logo-area h1 {
-      font-size: 1.5rem;
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-title {
+      font-size: 1.25rem;
       font-weight: 700;
-      color: var(--text);
+      letter-spacing: -0.02em;
+      color: white;
       display: flex;
       align-items: center;
       gap: 8px;
     }
 
-    .logo-badge {
-      background: var(--primary);
+    .brand-badge {
+      background: #2563eb;
       color: white;
-      font-size: 0.75rem;
+      font-size: 0.6875rem;
       padding: 2px 8px;
       border-radius: 4px;
       font-weight: 600;
+      letter-spacing: 0.05em;
     }
 
-    .subtitle {
+    .actor-session-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .user-chip {
+      background: #1e293b;
+      border: 1px solid #334155;
+      padding: 4px 10px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8125rem;
+    }
+
+    .role-badge {
+      font-size: 0.6875rem;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .role-reviewer { background: #065f46; color: #a7f3d0; }
+    .role-auditor { background: #374151; color: #d1d5db; }
+    .role-admin { background: #581c87; color: #e9d5ff; }
+
+    /* Top Nav Tabs */
+    .top-nav {
+      background: white;
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .nav-tab {
+      padding: 12px 18px;
       font-size: 0.875rem;
+      font-weight: 600;
       color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .nav-tab:hover { color: var(--text); }
+    .nav-tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
     }
 
+    /* Main Container */
+    main {
+      flex: 1;
+      padding: 24px;
+      max-width: 1440px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Banner */
     .disclaimer-banner {
       background: #eff6ff;
       border: 1px solid #bfdbfe;
       border-left: 4px solid var(--primary);
-      padding: 12px 16px;
+      padding: 10px 16px;
       border-radius: var(--radius);
-      margin-bottom: 24px;
-      font-size: 0.875rem;
+      margin-bottom: 20px;
+      font-size: 0.8125rem;
       color: #1e3a8a;
       display: flex;
       align-items: center;
       gap: 12px;
     }
 
-    .controls-bar {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      margin-bottom: 24px;
-      flex-wrap: wrap;
-      background: var(--card-bg);
-      padding: 16px;
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      box-shadow: var(--shadow);
-    }
-
-    .control-group {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    label {
-      font-size: 0.875rem;
-      font-weight: 600;
-      color: var(--text);
-    }
-
-    select, input, textarea {
-      font-family: inherit;
-      font-size: 0.875rem;
-      padding: 8px 12px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      background: white;
-      color: var(--text);
-    }
-
-    select:focus, input:focus, textarea:focus {
-      outline: 2px solid var(--primary);
-      outline-offset: -1px;
-    }
-
+    /* Buttons & Controls */
     button {
       font-family: inherit;
-      font-size: 0.875rem;
+      font-size: 0.8125rem;
       font-weight: 600;
-      padding: 8px 16px;
+      padding: 8px 14px;
       border-radius: 6px;
       border: none;
       cursor: pointer;
@@ -140,42 +174,38 @@
       gap: 6px;
       transition: background 0.15s ease;
     }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
 
     .btn-primary { background: var(--primary); color: white; }
-    .btn-primary:hover { background: var(--primary-hover); }
-    .btn-secondary { background: var(--neutral-bg); color: var(--text); border: 1px solid var(--border); }
-    .btn-secondary:hover { background: #e2e8f0; }
+    .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
+    .btn-secondary { background: white; color: var(--text); border: 1px solid var(--border-dark); }
+    .btn-secondary:hover:not(:disabled) { background: #f1f5f9; }
     .btn-success { background: var(--success); color: white; }
-    .btn-success:hover { background: #166534; }
+    .btn-success:hover:not(:disabled) { background: #166534; }
     .btn-danger { background: var(--danger); color: white; }
-    .btn-danger:hover { background: #991b1b; }
+    .btn-danger:hover:not(:disabled) { background: #991b1b; }
+    .btn-outline-danger { background: white; color: var(--danger); border: 1px solid var(--danger); }
+    .btn-outline-danger:hover:not(:disabled) { background: var(--danger-bg); }
 
-    .case-summary-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 16px 20px;
-      margin-bottom: 24px;
-      box-shadow: var(--shadow);
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-    }
-
-    .summary-item .label {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-muted);
-      margin-bottom: 4px;
-    }
-
-    .summary-item .value {
-      font-size: 1rem;
-      font-weight: 600;
+    /* Inputs */
+    select, input, textarea {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      padding: 7px 10px;
+      border: 1px solid var(--border-dark);
+      border-radius: 6px;
+      background: white;
       color: var(--text);
     }
+    select:focus, input:focus, textarea:focus {
+      outline: 2px solid var(--primary);
+      outline-offset: -1px;
+    }
 
+    /* Badges */
     .badge {
       display: inline-flex;
       align-items: center;
@@ -183,634 +213,740 @@
       border-radius: 9999px;
       font-size: 0.75rem;
       font-weight: 600;
+      letter-spacing: 0.02em;
     }
-
     .badge-MET { background: var(--success-bg); color: var(--success); }
     .badge-AMBIGUOUS { background: var(--warning-bg); color: var(--warning); }
     .badge-CONTRADICTED { background: var(--danger-bg); color: var(--danger); }
     .badge-MISSING { background: var(--neutral-bg); color: var(--neutral-badge); }
     .badge-FINALIZED { background: var(--success-bg); color: var(--success); }
+    .badge-RESULTS_READY { background: #dbeafe; color: #1e40af; }
+    .badge-IN_HUMAN_REVIEW { background: #fef3c7; color: #92400e; }
     .badge-DRAFT { background: var(--warning-bg); color: var(--warning); }
     .badge-REJECTED { background: var(--danger-bg); color: var(--danger); }
 
-    .section-title {
-      font-size: 1.125rem;
-      font-weight: 700;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    .tag {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: #e2e8f0;
+      color: #334155;
     }
 
-    .criteria-grid {
+    /* Screen Views */
+    .screen-view { display: none; }
+    .screen-view.active { display: block; }
+
+    /* Screen 1: Sign-In Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.6);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal-card {
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-md);
+      width: 100%;
+      max-width: 480px;
+      padding: 24px;
+      border: 1px solid var(--border);
+    }
+    .modal-header {
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+    }
+    .modal-header h2 { font-size: 1.125rem; font-weight: 700; color: var(--text); }
+    .persona-grid {
       display: flex;
       flex-direction: column;
-      gap: 16px;
-      margin-bottom: 32px;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .persona-btn {
+      text-align: left;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #f8fafc;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .persona-btn:hover {
+      background: #eff6ff;
+      border-color: #93c5fd;
     }
 
-    .criterion-card {
-      background: var(--card-bg);
+    /* Screen 2: Case Queue Table */
+    .queue-card {
+      background: white;
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 20px;
-      box-shadow: var(--shadow);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .queue-toolbar {
+      padding: 16px;
+      background: #f8fafc;
+      border-bottom: 1px solid var(--border);
       display: flex;
-      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
       gap: 12px;
+      flex-wrap: wrap;
+    }
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+    }
+    table.data-table th, table.data-table td {
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    table.data-table th {
+      background: #f8fafc;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-size: 0.6875rem;
+      letter-spacing: 0.05em;
+    }
+    table.data-table tr:hover td { background: #f8fafc; }
+
+    /* Case Workspace Header */
+    .workspace-header {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .workspace-meta {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .meta-box .label {
+      font-size: 0.6875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+    .meta-box .value {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--text);
     }
 
-    .criterion-header {
+    /* Sub-tabs in Workspace */
+    .workspace-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 2px;
+    }
+    .ws-tab {
+      padding: 8px 16px;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      border: 1px solid transparent;
+      border-radius: 6px 6px 0 0;
+      cursor: pointer;
+      background: transparent;
+    }
+    .ws-tab.active {
+      color: var(--primary);
+      background: white;
+      border-color: var(--border) var(--border) white var(--border);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Criterion Card */
+    .criterion-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-sm);
+    }
+    .crit-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
+      margin-bottom: 12px;
       gap: 16px;
     }
-
-    .criterion-id-title {
+    .crit-title-area {
       display: flex;
       flex-direction: column;
       gap: 4px;
     }
-
-    .criterion-id-badge {
-      font-family: var(--font-mono);
-      font-size: 0.75rem;
-      color: var(--text-muted);
-    }
-
-    .criterion-title {
-      font-size: 1rem;
+    .crit-text {
+      font-size: 0.9375rem;
       font-weight: 600;
+      color: var(--text);
     }
-
-    .reason-box {
-      font-size: 0.875rem;
-      color: #334155;
+    .crit-eval-box {
       background: #f8fafc;
       border-left: 3px solid #cbd5e1;
       padding: 8px 12px;
       border-radius: 4px;
+      font-size: 0.8125rem;
+      margin-bottom: 12px;
+      color: #334155;
     }
-
-    .evidence-section {
-      margin-top: 8px;
+    .gaps-box {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 0.8125rem;
+      color: #92400e;
+      margin-bottom: 12px;
     }
-
-    .evidence-section h4 {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-muted);
-      margin-bottom: 8px;
-    }
-
-    .evidence-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
     .evidence-item {
       background: #f8fafc;
       border: 1px solid var(--border);
       border-radius: 6px;
       padding: 10px 14px;
-      font-size: 0.875rem;
+      font-size: 0.8125rem;
+      margin-bottom: 8px;
     }
-
     .evidence-item.contradicting {
-      border-color: #fca5a5;
       background: #fff1f2;
+      border-color: #fca5a5;
     }
-
-    .evidence-meta {
+    .evidence-meta-row {
       display: flex;
-      gap: 12px;
-      font-family: var(--font-mono);
-      font-size: 0.75rem;
-      color: var(--text-muted);
+      gap: 8px;
+      align-items: center;
       margin-top: 6px;
       flex-wrap: wrap;
     }
 
-    .meta-tag {
-      background: #e2e8f0;
-      padding: 1px 6px;
-      border-radius: 4px;
-      color: #334155;
-    }
-
-    .missing-facts-box {
-      background: #fffbeb;
-      border: 1px solid #fde68a;
-      border-radius: 6px;
-      padding: 8px 12px;
-      font-size: 0.875rem;
-      color: #92400e;
-    }
-
-    .criterion-action-row {
-      margin-top: 12px;
-      padding-top: 12px;
-      border-top: 1px dashed var(--border);
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .finalization-desk {
-      background: var(--card-bg);
-      border: 2px solid var(--border);
-      border-radius: var(--radius);
-      padding: 24px;
-      margin-bottom: 32px;
-      box-shadow: var(--shadow);
-    }
-
-    .desk-form {
+    /* Evidence Inspector View (Screen 5) */
+    .inspector-layout {
       display: grid;
-      grid-template-columns: 1fr;
-      gap: 16px;
-      margin-top: 16px;
+      grid-template-columns: 280px 1fr;
+      gap: 20px;
     }
-
-    .audit-trail {
-      background: var(--card-bg);
+    .doc-nav-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow-sm);
+      height: fit-content;
+    }
+    .doc-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .doc-list-item {
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 0.8125rem;
+      cursor: pointer;
+      border: 1px solid transparent;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .doc-list-item:hover { background: #f1f5f9; }
+    .doc-list-item.active {
+      background: #eff6ff;
+      border-color: #93c5fd;
+      color: #1e40af;
+      font-weight: 600;
+    }
+    .viewer-card {
+      background: white;
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 20px;
-      box-shadow: var(--shadow);
-      margin-bottom: 32px;
+      box-shadow: var(--shadow-sm);
+    }
+    .doc-raw-container {
+      background: #fafafa;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px;
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    mark.evidence-highlight {
+      background: var(--highlight);
+      border-bottom: 2px solid var(--highlight-border);
+      padding: 2px 0;
+      font-weight: 600;
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.875rem;
-      margin-top: 12px;
+    /* Screen 6: Advisory vs Authoritative Comparison */
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 16px;
     }
-
-    th, td {
-      text-align: left;
-      padding: 8px 12px;
+    .comp-col {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow-sm);
+    }
+    .comp-header {
+      padding-bottom: 10px;
+      margin-bottom: 12px;
       border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
-    th {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-muted);
-      background: #f8fafc;
+    /* Screen 7: Adjudication Desk */
+    .adjudication-card {
+      background: white;
+      border: 2px solid #cbd5e1;
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--shadow);
+      max-width: 800px;
     }
 
-    .mono { font-family: var(--font-mono); }
-
+    /* Toast Notification */
     .toast {
       position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: #1e293b;
+      bottom: 24px;
+      right: 24px;
+      background: #0f172a;
       color: white;
       padding: 12px 20px;
       border-radius: 6px;
-      font-size: 0.875rem;
-      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+      font-size: 0.8125rem;
+      box-shadow: var(--shadow-md);
       display: none;
-      z-index: 1000;
+      z-index: 2000;
+      border-left: 4px solid var(--primary);
     }
+    .toast.toast-error {
+      border-left-color: var(--danger);
+      background: #7f1d1d;
+    }
+
+    .mono { font-family: var(--font-mono); }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <header>
-      <div class="logo-area">
-        <h1>AuthOS <span class="logo-badge">PRE-SUBMISSION EVIDENCE LINTER</span></h1>
-        <div class="subtitle">Provider-Side Evidence Provenance Verification & Human Review Workflow</div>
+  <!-- Header -->
+  <header>
+    <div class="brand-section">
+      <div class="brand-title">
+        <span>AuthOS</span>
+        <span class="brand-badge">PRE-SUBMISSION EVIDENCE LINTER</span>
       </div>
-      <div>
-        <span class="mono" style="font-size: 0.75rem; color: var(--text-muted);">Deterministic Engine v1.0</span>
+    </div>
+    <div class="actor-session-bar">
+      <div class="user-chip" id="userChip">
+        <span id="actorName">Authenticating...</span>
+        <span class="role-badge" id="actorRoleBadge">-</span>
       </div>
-    </header>
+      <button class="btn-secondary" onclick="openLoginModal()" style="padding: 4px 10px; font-size: 0.75rem;">
+        Switch Actor / Login
+      </button>
+    </div>
+  </header>
 
+  <!-- Top Navigation Tabs -->
+  <nav class="top-nav">
+    <div class="nav-tab active" id="tabQueue" onclick="showScreen('screenQueue')">
+      📋 Case Queue
+    </div>
+    <div class="nav-tab" id="tabWorkspace" onclick="showScreen('screenWorkspace')">
+      🔬 Review Workspace
+    </div>
+  </nav>
+
+  <main>
+    <!-- Safety Notice -->
     <div class="disclaimer-banner">
       <div style="font-size: 1.25rem;">⚖️</div>
       <div>
-        <strong>Human-in-the-Loop Review Gate:</strong> AuthOS is a clinical documentation aid for prior-authorization preparation. It does not determine medical necessity, predict insurer approval, or submit requests. Final decision authority resides solely with the human reviewer.
+        <strong>Deterministic Clinical Governance:</strong> AuthOS serves exclusively as an evidence provenance and criterion-verification aid. Final prior-authorization determinations require authorized human clinician review.
       </div>
     </div>
 
-    <!-- Controls Bar -->
-    <div class="controls-bar">
-      <div class="control-group">
-        <label for="actorSelect">Authenticated Actor:</label>
-        <select id="actorSelect" onchange="switchActor()">
-          <option value="dr_chen">Dr. Sarah Chen, MD (Reviewer — All Cases)</option>
-          <option value="dr_ross">Dr. Allison Ross, MD (Reviewer — CASE-SYN-001 Only)</option>
-          <option value="auditor_jane">Jane Doe (Auditor — Read Only)</option>
-          <option value="admin_alex">Alex Rivera (Admin — Full Access)</option>
-        </select>
-      </div>
-
-      <div class="control-group">
-        <label for="caseSelect">Synthetic Case:</label>
-        <select id="caseSelect" onchange="loadCase()">
-          <option value="CASE-SYN-001">CASE-SYN-001 (Sufficient Evidence / SYN-P001)</option>
-          <option value="CASE-SYN-002">CASE-SYN-002 (Incomplete PT Duration / SYN-P002)</option>
-          <option value="CASE-SYN-003">CASE-SYN-003 (Explicit PT Contradiction / SYN-P003)</option>
-        </select>
-      </div>
-
-      <button class="btn-primary" onclick="triggerEvaluate()">
-        ⚡ Run Deterministic Evaluation
-      </button>
-
-      <button class="btn-secondary" onclick="loadCase()">
-        🔄 Refresh
-      </button>
-    </div>
-
-    <!-- Case Summary -->
-    <div class="case-summary-card" id="caseSummary">
-      <div class="summary-item">
-        <div class="label">Case ID</div>
-        <div class="value mono" id="sumCaseId">-</div>
-      </div>
-      <div class="summary-item">
-        <div class="label">Patient</div>
-        <div class="value mono" id="sumPatientId">-</div>
-      </div>
-      <div class="summary-item">
-        <div class="label">Requested Service</div>
-        <div class="value" id="sumService">-</div>
-      </div>
-      <div class="summary-item">
-        <div class="label">Policy ID</div>
-        <div class="value mono" id="sumPolicy">-</div>
-      </div>
-      <div class="summary-item">
-        <div class="label">Workflow State</div>
-        <div class="value" id="sumStatus">-</div>
-      </div>
-      <div class="summary-item">
-        <div class="label">Packet Finalized</div>
-        <div class="value" id="sumFinalized">-</div>
-      </div>
-    </div>
-
-    <!-- Policy Criteria & Evidence Linter Results -->
-    <div class="section-title">
-      <span>📋 Policy Criteria & Provenance Verification</span>
-    </div>
-    <div class="criteria-grid" id="criteriaGrid">
-      <p style="color: var(--text-muted); font-size: 0.875rem;">Loading criteria...</p>
-    </div>
-
-    <!-- Finalization Desk -->
-    <div class="finalization-desk">
-      <div class="section-title">
-        <span>✍️ Final Reviewer Adjudication Desk</span>
-      </div>
-      <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 12px;">
-        As the licensed clinician reviewer, record your formal packet determination. Approval requires that all policy criteria are substantiated or clinical exceptions documented.
-      </p>
-      <div class="desk-form">
-        <div>
-          <label for="finalAction">Determination Action:</label>
-          <select id="finalAction" style="width: 100%; margin-top: 4px;">
-            <option value="approve_packet">Approve Packet for Clinician Signature (APPROVE_PACKET)</option>
-            <option value="request_edits">Request Additional Clinical Records (REQUEST_EDITS)</option>
-            <option value="reject_packet">Reject Authorization Packet (REJECT_PACKET)</option>
-          </select>
+    <!-- =================================================================== -->
+    <!-- SCREEN 2: CASE QUEUE VIEW -->
+    <!-- =================================================================== -->
+    <section id="screenQueue" class="screen-view active">
+      <div class="queue-card">
+        <div class="queue-toolbar">
+          <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <label style="font-size: 0.8125rem; font-weight: 600;">Filter Status:</label>
+            <select id="queueStatusFilter" onchange="filterCaseQueue()">
+              <option value="ALL">All Statuses</option>
+              <option value="DRAFT">DRAFT</option>
+              <option value="RESULTS_READY">RESULTS_READY</option>
+              <option value="IN_HUMAN_REVIEW">IN_HUMAN_REVIEW</option>
+              <option value="FINALIZED">FINALIZED</option>
+              <option value="REJECTED">REJECTED</option>
+            </select>
+            <input type="text" id="queueSearch" placeholder="Search case or patient ID..." oninput="filterCaseQueue()" style="width: 220px;">
+          </div>
+          <button class="btn-secondary" onclick="fetchCases()">
+            🔄 Refresh Cases
+          </button>
         </div>
-        <div>
-          <label for="finalNote">Reviewer Clinical Rationale / Note (Mandatory):</label>
-          <textarea id="finalNote" rows="3" style="width: 100%; margin-top: 4px;" placeholder="Document clinical review findings, record gaps, or rationale for packet disposition..."></textarea>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Case ID</th>
+              <th>Patient ID</th>
+              <th>Requested Service</th>
+              <th>Payer Policy</th>
+              <th>Workflow Status</th>
+              <th>Scenario / Notes</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="caseQueueBody">
+            <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">Loading case queue...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- CASE WORKSPACE VIEW (Screens 3, 4, 5, 6, 7, 8) -->
+    <!-- =================================================================== -->
+    <section id="screenWorkspace" class="screen-view">
+      <!-- Case Workspace Header -->
+      <div class="workspace-header">
+        <div class="workspace-meta">
+          <div class="meta-box">
+            <div class="label">Case ID</div>
+            <div class="value mono" id="wsCaseId">-</div>
+          </div>
+          <div class="meta-box">
+            <div class="label">Patient</div>
+            <div class="value mono" id="wsPatientId">-</div>
+          </div>
+          <div class="meta-box">
+            <div class="label">Requested Service</div>
+            <div class="value" id="wsService">-</div>
+          </div>
+          <div class="meta-box">
+            <div class="label">Policy ID</div>
+            <div class="value mono" id="wsPolicy">-</div>
+          </div>
+          <div class="meta-box">
+            <div class="label">Workflow State</div>
+            <div class="value" id="wsStatusBadge">-</div>
+          </div>
+          <div class="meta-box">
+            <div class="label">Packet State</div>
+            <div class="value" id="wsPacketBadge">-</div>
+          </div>
         </div>
-        <div>
-          <button class="btn-success" onclick="submitFinalization()">
-            💾 Commit Final Determination
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-primary" onclick="triggerEvaluation()">
+            ⚡ Run Evaluation
+          </button>
+          <button class="btn-secondary" onclick="triggerClaimAnalysis()">
+            🤖 Advisory AI Analysis
+          </button>
+          <button class="btn-secondary" onclick="reloadActiveCase()">
+            🔄 Refresh
           </button>
         </div>
       </div>
-    </div>
 
-    <!-- Audit Trail -->
-    <div class="audit-trail">
-      <div class="section-title">
-        <span>📜 Chronological Audit Trail</span>
+      <!-- Workspace Sub-tabs -->
+      <div class="workspace-tabs">
+        <button class="ws-tab active" id="wsTabCriteria" onclick="showWsSubView('wsCriteriaView')">
+          📋 Criteria & Evidence
+        </button>
+        <button class="ws-tab" id="wsTabInspector" onclick="showWsSubView('wsInspectorView')">
+          📄 Source Document Inspector
+        </button>
+        <button class="ws-tab" id="wsTabAdvisory" onclick="showWsSubView('wsAdvisoryView')">
+          ⚖️ Advisory vs Authoritative Diff
+        </button>
+        <button class="ws-tab" id="wsTabAdjudicate" onclick="showWsSubView('wsAdjudicateView')">
+          ✍️ Clinician Adjudication
+        </button>
+        <button class="ws-tab" id="wsTabAudit" onclick="showWsSubView('wsAuditView')">
+          📜 Packet & Audit Trail
+        </button>
       </div>
-      <table>
-        <thead>
-          <tr>
-            <th>Timestamp</th>
-            <th>Actor</th>
-            <th>Action</th>
-            <th>Criterion</th>
-            <th>Clinical Note / Details</th>
-          </tr>
-        </thead>
-        <tbody id="auditTableBody">
-          <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No audit records found.</td></tr>
-        </tbody>
-      </table>
+
+      <!-- SUB-VIEW 4: CRITERIA REVIEW PANEL -->
+      <div id="wsCriteriaView" class="ws-sub-view">
+        <div id="criteriaListContainer">
+          <p style="color: var(--text-muted);">Loading criteria results...</p>
+        </div>
+      </div>
+
+      <!-- SUB-VIEW 5: SOURCE DOCUMENT INSPECTOR -->
+      <div id="wsInspectorView" class="ws-sub-view" style="display: none;">
+        <div class="inspector-layout">
+          <div class="doc-nav-card">
+            <div style="font-weight: 600; font-size: 0.875rem; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+              <span>Chart Documents</span>
+              <button class="btn-secondary" onclick="openIngestModal()" style="padding: 2px 6px; font-size: 0.6875rem;">
+                + Ingest Note
+              </button>
+            </div>
+            <div class="doc-list" id="docListContainer">
+              <p style="color: var(--text-muted); font-size: 0.75rem;">Loading documents...</p>
+            </div>
+          </div>
+          <div class="viewer-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+              <div>
+                <h3 id="docViewerTitle" style="font-size: 1rem;">Select a document</h3>
+                <div id="docViewerMeta" style="font-size: 0.75rem; color: var(--text-muted);" class="mono"></div>
+              </div>
+              <div id="docVerificationStatus"></div>
+            </div>
+            <div class="doc-raw-container" id="docRawContent">
+              Select a document or evidence citation to inspect verbatim source text.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-VIEW 6: ADVISORY VS AUTHORITATIVE DIFF -->
+      <div id="wsAdvisoryView" class="ws-sub-view" style="display: none;">
+        <div class="disclaimer-banner" style="background: #fffbeb; border-color: #fde68a; border-left-color: #d97706; color: #92400e;">
+          <div style="font-size: 1.25rem;">⚠️</div>
+          <div>
+            <strong>Advisory AI Analysis Disclaimer:</strong> AI proposals are non-authoritative clinical draft suggestions. They do NOT mutate authoritative database criterion records. All decisions require human reviewer validation.
+          </div>
+        </div>
+        <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 0.875rem; font-weight: 600;" id="advisoryProviderLabel">Provider: Not yet executed for this session</span>
+          <button class="btn-primary" onclick="triggerClaimAnalysis()">
+            Run Advisory Analysis Now
+          </button>
+        </div>
+        <div id="comparisonContainer">
+          <p style="color: var(--text-muted); font-size: 0.8125rem;">Click "Run Advisory Analysis Now" to compare deterministic ground truth against AI proposals.</p>
+        </div>
+      </div>
+
+      <!-- SUB-VIEW 7: CLINICIAN ADJUDICATION DESK -->
+      <div id="wsAdjudicateView" class="ws-sub-view" style="display: none;">
+        <div class="adjudication-card">
+          <h3 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 8px;">Formal Determination Desk</h3>
+          <p style="font-size: 0.8125rem; color: var(--text-muted); margin-bottom: 16px;">
+            Commit an authoritative clinical adjudication on the review packet. Approval confirms evidence criteria are met or clinically justified.
+          </p>
+
+          <div id="adjudicationWarning" style="margin-bottom: 16px;"></div>
+
+          <div style="margin-bottom: 14px;">
+            <label style="display: block; font-weight: 600; margin-bottom: 4px;">Adjudication Action:</label>
+            <select id="finalActionSelect" style="width: 100%;">
+              <option value="approve_packet">Approve Packet for Clinician Signature (APPROVE_PACKET)</option>
+              <option value="request_edits">Request Additional Clinical Records (REQUEST_EDITS)</option>
+              <option value="reject_packet">Reject Authorization Packet (REJECT_PACKET)</option>
+            </select>
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <label style="display: block; font-weight: 600; margin-bottom: 4px;">Reviewer Clinical Rationale / Note (Mandatory):</label>
+            <textarea id="finalActionNote" rows="4" style="width: 100%;" placeholder="Detail clinical documentation findings, rationale for disposition, or specific record requests..."></textarea>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 0.75rem; color: var(--text-muted);">
+              Acting Clinician: <strong id="adjudicationActorLabel">-</strong>
+            </div>
+            <button class="btn-success" id="btnSubmitFinal" onclick="submitFinalDetermination()">
+              💾 Commit Determination
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-VIEW 8: PACKET & AUDIT TRAIL -->
+      <div id="wsAuditView" class="ws-sub-view" style="display: none;">
+        <div class="queue-card" style="margin-bottom: 24px; padding: 20px;">
+          <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 8px;">Final Review Packet View</h3>
+          <div id="packetSummaryBox" style="background: #f8fafc; border: 1px solid var(--border); border-radius: 6px; padding: 14px; font-size: 0.8125rem;">
+            Loading packet details...
+          </div>
+        </div>
+
+        <div class="queue-card">
+          <div style="padding: 14px 16px; background: #f8fafc; border-bottom: 1px solid var(--border); font-weight: 600; font-size: 0.875rem;">
+            📜 Chronological Audit Trail (Immutable)
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Timestamp (UTC)</th>
+                <th>Authenticated Actor</th>
+                <th>Action</th>
+                <th>Criterion</th>
+                <th>Clinical Note / Rationale</th>
+              </tr>
+            </thead>
+            <tbody id="auditTrailBody">
+              <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Loading audit records...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- =================================================================== -->
+  <!-- MODAL: AUTHENTICATED SIGN-IN -->
+  <!-- =================================================================== -->
+  <div id="modalSignIn" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Clinical Actor Authentication</h2>
+      </div>
+      <p style="font-size: 0.8125rem; color: var(--text-muted); margin-bottom: 14px;">
+        Select a synthetic clinical reviewer or auditor persona to acquire a signed JWT access token.
+      </p>
+
+      <div class="persona-grid">
+        <div class="persona-btn" onclick="loginAs('dr_chen')">
+          <div>
+            <strong>Dr. Sarah Chen, MD</strong>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">Clinician Reviewer (All Cases)</div>
+          </div>
+          <span class="role-badge role-reviewer">REVIEWER</span>
+        </div>
+
+        <div class="persona-btn" onclick="loginAs('dr_ross')">
+          <div>
+            <strong>Dr. Allison Ross, MD</strong>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">Clinician Reviewer (CASE-SYN-001 Only)</div>
+          </div>
+          <span class="role-badge role-reviewer">REVIEWER</span>
+        </div>
+
+        <div class="persona-btn" onclick="loginAs('auditor_jane')">
+          <div>
+            <strong>Jane Doe</strong>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">Auditor (Read-Only Observer)</div>
+          </div>
+          <span class="role-badge role-auditor">AUDITOR</span>
+        </div>
+
+        <div class="persona-btn" onclick="loginAs('admin_alex')">
+          <div>
+            <strong>Alex Rivera</strong>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">System Administrator (Full Access)</div>
+          </div>
+          <span class="role-badge role-admin">ADMIN</span>
+        </div>
+      </div>
+
+      <div style="text-align: right;">
+        <button class="btn-secondary" onclick="closeLoginModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- MODAL: DOCUMENT INGESTION -->
+  <!-- =================================================================== -->
+  <div id="modalIngest" class="modal-overlay" style="display: none;">
+    <div class="modal-card" style="max-width: 540px;">
+      <div class="modal-header">
+        <h2>Ingest Chart Document</h2>
+      </div>
+      <form onsubmit="submitDocumentIngest(event)">
+        <div style="margin-bottom: 10px;">
+          <label style="display: block; font-size: 0.75rem; font-weight: 600; margin-bottom: 2px;">Source ID (e.g. CLINIC-NOTE-02):</label>
+          <input type="text" id="ingestSourceId" required style="width: 100%;">
+        </div>
+        <div style="margin-bottom: 10px;">
+          <label style="display: block; font-size: 0.75rem; font-weight: 600; margin-bottom: 2px;">Document Date (YYYY-MM-DD):</label>
+          <input type="date" id="ingestDocDate" required style="width: 100%;">
+        </div>
+        <div style="margin-bottom: 10px;">
+          <label style="display: block; font-size: 0.75rem; font-weight: 600; margin-bottom: 2px;">MIME Format:</label>
+          <select id="ingestMimeType" style="width: 100%;">
+            <option value="text/plain">text/plain</option>
+            <option value="text/markdown">text/markdown</option>
+            <option value="application/json">application/json</option>
+          </select>
+        </div>
+        <div style="margin-bottom: 14px;">
+          <label style="display: block; font-size: 0.75rem; font-weight: 600; margin-bottom: 2px;">Document Text Content:</label>
+          <textarea id="ingestText" rows="6" required style="width: 100%;" placeholder="Enter clinical progress note or report text..."></textarea>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px;">
+          <button type="button" class="btn-secondary" onclick="closeIngestModal()">Cancel</button>
+          <button type="submit" class="btn-primary">Ingest Document</button>
+        </div>
+      </form>
     </div>
   </div>
 
   <div id="toast" class="toast">Action recorded successfully.</div>
 
+  <!-- APPLICATION LOGIC -->
   <script>
+    // State management: tokens held strictly in memory
     let currentAuthToken = null;
-    let currentActorProfile = null;
+    let currentUserProfile = null;
+    let currentCaseList = [];
+    let activeCaseId = "CASE-SYN-001";
+    let activeCaseData = null;
+    let activePacketData = null;
+    let activeDocuments = [];
+    let activeAdvisoryAnalysis = null;
 
-    const SYNTHETIC_CREDS = {
+    const SYNTHETIC_CREDENTIALS = {
       dr_chen: { username: "dr_chen", password: "synthetic-demo-pass-dr-chen" },
       dr_ross: { username: "dr_ross", password: "synthetic-demo-pass-dr-ross" },
       auditor_jane: { username: "auditor_jane", password: "synthetic-demo-pass-auditor-jane" },
       admin_alex: { username: "admin_alex", password: "synthetic-demo-pass-admin-alex" }
     };
 
-    function showToast(msg) {
+    function showToast(msg, isError = false) {
       const t = document.getElementById('toast');
       t.innerText = msg;
+      t.className = isError ? 'toast toast-error' : 'toast';
       t.style.display = 'block';
-      setTimeout(() => { t.style.display = 'none'; }, 3500);
-    }
-
-    async function switchActor() {
-      const selected = document.getElementById('actorSelect').value;
-      const creds = SYNTHETIC_CREDS[selected];
-      try {
-        const res = await fetch('/api/v1/auth/token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(creds)
-        });
-        if (!res.ok) {
-          throw new Error('Authentication failed');
-        }
-        const data = await res.json();
-        currentAuthToken = data.access_token;
-        currentActorProfile = data.user;
-        showToast(`Signed in as ${data.user.name} (${data.user.role})`);
-        await loadCase();
-      } catch (err) {
-        showToast('Auth error: ' + err.message);
-      }
-    }
-
-    async function authFetch(url, options = {}) {
-      options.headers = options.headers || {};
-      if (currentAuthToken) {
-        options.headers['Authorization'] = `Bearer ${currentAuthToken}`;
-      }
-      return fetch(url, options);
-    }
-
-    async function parseErrorMessage(res, defaultMsg) {
-      try {
-        const text = await res.text();
-        if (!text) return `${defaultMsg} (HTTP ${res.status})`;
-        try {
-          const data = JSON.parse(text);
-          return data.error?.message || data.detail?.message || data.detail || `${defaultMsg}: ${text.slice(0, 100)}`;
-        } catch {
-          return `${defaultMsg}: ${text.slice(0, 100)}`;
-        }
-      } catch {
-        return defaultMsg;
-      }
-    }
-
-    async function loadCase() {
-      const caseId = document.getElementById('caseSelect').value;
-      try {
-        const caseRes = await authFetch(`/api/v1/cases/${caseId}`);
-        if (!caseRes.ok) {
-          const msg = await parseErrorMessage(caseRes, "Failed to load case metadata");
-          throw new Error(msg);
-        }
-        const caseData = await caseRes.json();
-
-        // Load packet preview
-        const packetRes = await authFetch(`/api/v1/cases/${caseId}/packet?preview=true`);
-        if (!packetRes.ok) {
-          const msg = await parseErrorMessage(packetRes, "Failed to load review packet");
-          throw new Error(msg);
-        }
-        const packetData = await packetRes.json();
-
-        renderSummary(caseData, packetData);
-        renderCriteria(packetData.criteria || []);
-        renderAudit(packetData.audit_events || []);
-      } catch (err) {
-        console.error("Error loading case:", err);
-        showToast("Error: " + err.message);
-      }
-    }
-
-    function renderSummary(caseData, packetData) {
-      document.getElementById('sumCaseId').innerText = caseData.case_id || '-';
-      document.getElementById('sumPatientId').innerText = caseData.patient_id || '-';
-      document.getElementById('sumService').innerText = caseData.service || '-';
-      document.getElementById('sumPolicy').innerText = caseData.policy_id || '-';
-      document.getElementById('sumStatus').innerHTML = `<span class="badge badge-${caseData.status}">${caseData.status}</span>`;
-      
-      const fin = packetData.finalized;
-      document.getElementById('sumFinalized').innerHTML = fin 
-        ? `<span class="badge badge-FINALIZED">FINALIZED</span>` 
-        : `<span class="badge badge-DRAFT">DRAFT / PENDING</span>`;
-    }
-
-    function renderCriteria(criteria) {
-      const container = document.getElementById('criteriaGrid');
-      if (!criteria.length) {
-        container.innerHTML = '<p style="color: var(--text-muted);">No criteria results evaluated yet. Click "Run Deterministic Evaluation".</p>';
-        return;
-      }
-
-      container.innerHTML = criteria.map(c => {
-        const evidenceHtml = (c.evidence || []).map(e => `
-          <div class="evidence-item">
-            <div><em>"${escapeHtml(e.quote)}"</em></div>
-            <div class="evidence-meta">
-              <span class="meta-tag">Source: ${escapeHtml(e.source_id)}</span>
-              <span class="meta-tag">Offsets: [${e.char_start}:${e.char_end}]</span>
-              <span class="meta-tag">Date: ${escapeHtml(e.document_date || 'N/A')}</span>
-              <span class="meta-tag">Polarity: ${e.polarity}</span>
-            </div>
-          </div>
-        `).join('');
-
-        const conflictHtml = (c.conflicting_evidence || []).map(e => `
-          <div class="evidence-item contradicting">
-            <div style="font-weight: 600; color: var(--danger); margin-bottom: 4px;">⚠️ Conflicting Chart Record:</div>
-            <div><em>"${escapeHtml(e.quote)}"</em></div>
-            <div class="evidence-meta">
-              <span class="meta-tag">Source: ${escapeHtml(e.source_id)}</span>
-              <span class="meta-tag">Offsets: [${e.char_start}:${e.char_end}]</span>
-              <span class="meta-tag">Date: ${escapeHtml(e.document_date || 'N/A')}</span>
-            </div>
-          </div>
-        `).join('');
-
-        const missingHtml = (c.missing_facts && c.missing_facts.length) ? `
-          <div class="missing-facts-box">
-            <strong>Documentation Gaps Identified:</strong>
-            <ul style="margin-left: 20px; margin-top: 4px;">
-              ${c.missing_facts.map(f => `<li>${escapeHtml(f)}</li>`).join('')}
-            </ul>
-          </div>
-        ` : '';
-
-        return `
-          <div class="criterion-card">
-            <div class="criterion-header">
-              <div class="criterion-id-title">
-                <span class="criterion-id-badge">${c.criterion_id}</span>
-                <span class="criterion-title">${escapeHtml(c.criterion)}</span>
-              </div>
-              <div>
-                <span class="badge badge-${c.status}">${c.status}</span>
-              </div>
-            </div>
-
-            <div class="reason-box">
-              <strong>Assessment:</strong> ${escapeHtml(c.reason || 'No details')}
-            </div>
-
-            ${missingHtml}
-
-            ${conflictHtml ? `
-              <div class="evidence-section">
-                <h4>Conflicting / Negating Evidence</h4>
-                <div class="evidence-list">${conflictHtml}</div>
-              </div>
-            ` : ''}
-
-            <div class="evidence-section">
-              <h4>Supporting Evidence (${(c.evidence || []).length} cited)</h4>
-              <div class="evidence-list">${evidenceHtml || '<p style="color: var(--text-muted); font-size: 0.8125rem;">No supporting evidence retrieved.</p>'}</div>
-            </div>
-
-            <div class="criterion-action-row">
-              <span style="font-size: 0.8125rem; font-weight: 600; color: var(--text-muted);">Annotate Criterion:</span>
-              <select id="action_${c.criterion_id}" style="font-size: 0.8125rem;">
-                <option value="request_information">Request Additional Records (REQUEST_INFORMATION)</option>
-                <option value="accept_gap">Accept Documentation Gap (ACCEPT_GAP)</option>
-                <option value="flag_contradiction">Flag Contradiction (FLAG_CONTRADICTION)</option>
-                <option value="custom_note">Reviewer Clinical Note (CUSTOM_NOTE)</option>
-              </select>
-              <input type="text" id="note_${c.criterion_id}" placeholder="Reviewer rationale..." style="flex: 1; min-width: 200px; font-size: 0.8125rem;">
-              <button class="btn-secondary" style="font-size: 0.8125rem;" onclick="submitCriterionAction('${c.criterion_id}')">
-                Save Annotation
-              </button>
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    function renderAudit(audits) {
-      const tbody = document.getElementById('auditTableBody');
-      if (!audits.length) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No audit records found.</td></tr>';
-        return;
-      }
-      tbody.innerHTML = audits.map(a => `
-        <tr>
-          <td class="mono" style="font-size: 0.75rem;">${escapeHtml(a.created_at || '-')}</td>
-          <td style="font-weight: 600;">${escapeHtml(a.actor || 'SYSTEM')}</td>
-          <td><span class="mono">${escapeHtml(a.action)}</span></td>
-          <td class="mono">${escapeHtml(a.criterion_id || 'ALL')}</td>
-          <td>${escapeHtml(a.note || '-')}</td>
-        </tr>
-      `).join('');
-    }
-
-    async function triggerEvaluate() {
-      const caseId = document.getElementById('caseSelect').value;
-      try {
-        const res = await authFetch(`/api/v1/cases/${caseId}/evaluate`, { method: 'POST' });
-        if (!res.ok) {
-          const msg = await parseErrorMessage(res, "Evaluation failed");
-          throw new Error(msg);
-        }
-        showToast("Deterministic evaluation completed.");
-        await loadCase();
-      } catch (err) {
-        alert("Evaluation failed: " + err.message);
-      }
-    }
-
-    async function submitCriterionAction(critId) {
-      const caseId = document.getElementById('caseSelect').value;
-      const action = document.getElementById(`action_${critId}`).value;
-      const note = document.getElementById(`note_${critId}`).value.trim();
-
-      if (!note) {
-        alert("Reviewer note is required for auditable criterion annotation.");
-        return;
-      }
-
-      try {
-        const res = await authFetch(`/api/v1/cases/${caseId}/review`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            criterion_id: critId,
-            action: action,
-            note: note
-          })
-        });
-
-        if (!res.ok) {
-          const msg = await parseErrorMessage(res, "Failed to save review action");
-          throw new Error(msg);
-        }
-
-        document.getElementById(`note_${critId}`).value = '';
-        showToast("Criterion annotation saved to audit trail.");
-        await loadCase();
-      } catch (err) {
-        alert("Error saving review action: " + err.message);
-      }
-    }
-
-    async function submitFinalization() {
-      const caseId = document.getElementById('caseSelect').value;
-      const action = document.getElementById('finalAction').value;
-      const note = document.getElementById('finalNote').value.trim();
-
-      if (!note) {
-        alert("A clinical note is mandatory when finalizing, rejecting, or requesting edits on a packet.");
-        return;
-      }
-
-      try {
-        const res = await authFetch(`/api/v1/cases/${caseId}/approve`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: action,
-            reviewer_note: note
-          })
-        });
-
-        if (!res.ok) {
-          const msg = await parseErrorMessage(res, "Finalization failed");
-          throw new Error(msg);
-        }
-
-        document.getElementById('finalNote').value = '';
-        showToast("Final determination recorded successfully.");
-        await loadCase();
-      } catch (err) {
-        alert("Finalization failed: " + err.message);
-      }
+      setTimeout(() => { t.style.display = 'none'; }, 4000);
     }
 
     function escapeHtml(str) {
@@ -823,8 +959,615 @@
         .replace(/'/g, '&#039;');
     }
 
-    // Initial load: authenticate initial actor and load case
-    window.addEventListener('DOMContentLoaded', switchActor);
+    async function authFetch(url, options = {}) {
+      options.headers = options.headers || {};
+      if (currentAuthToken) {
+        options.headers['Authorization'] = `Bearer ${currentAuthToken}`;
+      }
+      const res = await fetch(url, options);
+      if (res.status === 401) {
+        showToast("Session expired or unauthorized. Please re-authenticate.", true);
+        openLoginModal();
+      }
+      return res;
+    }
+
+    async function parseErrorMessage(res, defaultMsg) {
+      try {
+        const text = await res.text();
+        if (!text) return `${defaultMsg} (HTTP ${res.status})`;
+        try {
+          const data = JSON.parse(text);
+          return data.error?.message || data.detail?.message || data.detail || `${defaultMsg}: ${text.slice(0, 120)}`;
+        } catch {
+          return `${defaultMsg}: ${text.slice(0, 120)}`;
+        }
+      } catch {
+        return defaultMsg;
+      }
+    }
+
+    // Modal controls
+    function openLoginModal() { document.getElementById('modalSignIn').style.display = 'flex'; }
+    function closeLoginModal() { document.getElementById('modalSignIn').style.display = 'none'; }
+    function openIngestModal() { document.getElementById('modalIngest').style.display = 'flex'; }
+    function closeIngestModal() { document.getElementById('modalIngest').style.display = 'none'; }
+
+    // Screen navigation
+    function showScreen(screenId) {
+      document.querySelectorAll('.screen-view').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+      document.getElementById(screenId).classList.add('active');
+      if (screenId === 'screenQueue') {
+        document.getElementById('tabQueue').classList.add('active');
+        fetchCases();
+      } else {
+        document.getElementById('tabWorkspace').classList.add('active');
+        loadActiveCaseWorkspace();
+      }
+    }
+
+    function showWsSubView(viewId) {
+      document.querySelectorAll('.ws-sub-view').forEach(el => el.style.display = 'none');
+      document.querySelectorAll('.ws-tab').forEach(el => el.classList.remove('active'));
+      document.getElementById(viewId).style.display = 'block';
+
+      if (viewId === 'wsCriteriaView') document.getElementById('wsTabCriteria').classList.add('active');
+      if (viewId === 'wsInspectorView') document.getElementById('wsTabInspector').classList.add('active');
+      if (viewId === 'wsAdvisoryView') document.getElementById('wsTabAdvisory').classList.add('active');
+      if (viewId === 'wsAdjudicateView') document.getElementById('wsTabAdjudicate').classList.add('active');
+      if (viewId === 'wsAuditView') document.getElementById('wsTabAudit').classList.add('active');
+    }
+
+    // Authentication (Screen 1)
+    async function loginAs(personaKey) {
+      const creds = SYNTHETIC_CREDENTIALS[personaKey];
+      try {
+        const res = await fetch('/api/v1/auth/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(creds)
+        });
+        if (!res.ok) {
+          const msg = await parseErrorMessage(res, "Authentication failed");
+          throw new Error(msg);
+        }
+        const data = await res.json();
+        currentAuthToken = data.access_token;
+        currentUserProfile = data.user;
+
+        document.getElementById('actorName').innerText = data.user.name;
+        const roleBadge = document.getElementById('actorRoleBadge');
+        roleBadge.innerText = data.user.role;
+        roleBadge.className = 'role-badge ' + (
+          data.user.role === 'clinician_reviewer' ? 'role-reviewer' :
+          data.user.role === 'auditor' ? 'role-auditor' : 'role-admin'
+        );
+
+        closeLoginModal();
+        showToast(`Authenticated as ${data.user.name} (${data.user.role})`);
+        await fetchCases();
+        if (activeCaseId) await loadActiveCaseWorkspace();
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    // Case Queue (Screen 2)
+    async function fetchCases() {
+      try {
+        const res = await authFetch('/api/v1/cases');
+        if (!res.ok) {
+          const msg = await parseErrorMessage(res, "Failed to load cases");
+          throw new Error(msg);
+        }
+        currentCaseList = await res.json();
+        renderCaseQueue(currentCaseList);
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    function renderCaseQueue(cases) {
+      const tbody = document.getElementById('caseQueueBody');
+      if (!cases.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">No cases found for active actor.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = cases.map(c => `
+        <tr>
+          <td class="mono"><strong>${escapeHtml(c.case_id)}</strong></td>
+          <td class="mono">${escapeHtml(c.patient_id)}</td>
+          <td>${escapeHtml(c.service)}</td>
+          <td class="mono">${escapeHtml(c.policy_id)}</td>
+          <td><span class="badge badge-${c.status}">${escapeHtml(c.status)}</span></td>
+          <td style="color: var(--text-muted);">${escapeHtml(c.scenario || '-')}</td>
+          <td>
+            <button class="btn-primary" style="padding: 4px 10px; font-size: 0.75rem;" onclick="openCaseWorkspace('${c.case_id}')">
+              Open Workspace
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function filterCaseQueue() {
+      const statusFilter = document.getElementById('queueStatusFilter').value;
+      const term = document.getElementById('queueSearch').value.toLowerCase().trim();
+
+      const filtered = currentCaseList.filter(c => {
+        const matchStatus = (statusFilter === 'ALL' || c.status === statusFilter);
+        const matchSearch = (!term || c.case_id.toLowerCase().includes(term) || c.patient_id.toLowerCase().includes(term) || (c.service || '').toLowerCase().includes(term));
+        return matchStatus && matchSearch;
+      });
+      renderCaseQueue(filtered);
+    }
+
+    function openCaseWorkspace(caseId) {
+      activeCaseId = caseId;
+      showScreen('screenWorkspace');
+    }
+
+    // Case Workspace Loader (Screens 3, 4, 5, 6, 7, 8)
+    async function loadActiveCaseWorkspace() {
+      if (!activeCaseId) return;
+      try {
+        const [caseRes, packetRes, docsRes] = await Promise.all([
+          authFetch(`/api/v1/cases/${activeCaseId}`),
+          authFetch(`/api/v1/cases/${activeCaseId}/packet?preview=true`),
+          authFetch(`/api/v1/cases/${activeCaseId}/documents`)
+        ]);
+
+        if (!caseRes.ok) {
+          const msg = await parseErrorMessage(caseRes, `Failed to load case ${activeCaseId}`);
+          throw new Error(msg);
+        }
+        activeCaseData = await caseRes.json();
+        activePacketData = packetRes.ok ? await packetRes.json() : null;
+        activeDocuments = docsRes.ok ? await docsRes.json() : [];
+
+        renderWorkspaceHeader();
+        renderCriteriaPanel();
+        renderDocumentNav();
+        renderAdjudicationDesk();
+        renderAuditTrail();
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    function reloadActiveCase() {
+      loadActiveCaseWorkspace();
+      showToast("Workspace refreshed.");
+    }
+
+    function renderWorkspaceHeader() {
+      if (!activeCaseData) return;
+      document.getElementById('wsCaseId').innerText = activeCaseData.case_id;
+      document.getElementById('wsPatientId').innerText = activeCaseData.patient_id;
+      document.getElementById('wsService').innerText = activeCaseData.service;
+      document.getElementById('wsPolicy').innerText = activeCaseData.policy_id;
+      document.getElementById('wsStatusBadge').innerHTML = `<span class="badge badge-${activeCaseData.status}">${activeCaseData.status}</span>`;
+      
+      const isFin = activePacketData?.finalized;
+      document.getElementById('wsPacketBadge').innerHTML = isFin
+        ? `<span class="badge badge-FINALIZED">FINALIZED</span>`
+        : `<span class="badge badge-DRAFT">DRAFT / IN REVIEW</span>`;
+
+      document.getElementById('adjudicationActorLabel').innerText = currentUserProfile 
+        ? `${currentUserProfile.name} (${currentUserProfile.role})`
+        : 'Unknown Reviewer';
+    }
+
+    // Screen 4: Criterion Review Panel
+    function renderCriteriaPanel() {
+      const container = document.getElementById('criteriaListContainer');
+      const criteria = activePacketData?.criteria || [];
+
+      if (!criteria.length) {
+        container.innerHTML = `
+          <div style="background: white; padding: 24px; border: 1px solid var(--border); border-radius: var(--radius); text-align: center;">
+            <p style="color: var(--text-muted); margin-bottom: 12px;">No evaluated criterion records found for this case.</p>
+            <button class="btn-primary" onclick="triggerEvaluation()">⚡ Run Deterministic Evaluation</button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = criteria.map(c => {
+        const supporting = (c.evidence || []).map(e => `
+          <div class="evidence-item">
+            <div style="margin-bottom: 4px;"><em>"${escapeHtml(e.quote)}"</em></div>
+            <div class="evidence-meta-row">
+              <span class="tag">Source: ${escapeHtml(e.source_id)}</span>
+              <span class="tag">Offsets: [${e.char_start}:${e.char_end}]</span>
+              <span class="tag">Date: ${escapeHtml(e.document_date || 'N/A')}</span>
+              <span class="tag">Polarity: ${escapeHtml(e.polarity)}</span>
+              <button class="btn-secondary" style="padding: 2px 6px; font-size: 0.6875rem;" onclick="inspectEvidence('${escapeHtml(e.source_id)}', ${e.char_start}, ${e.char_end})">
+                🔍 Inspect in Source
+              </button>
+            </div>
+          </div>
+        `).join('');
+
+        const conflicting = (c.conflicting_evidence || []).map(e => `
+          <div class="evidence-item contradicting">
+            <div style="font-weight: 600; color: var(--danger); margin-bottom: 4px;">⚠️ Conflicting Chart Record:</div>
+            <div><em>"${escapeHtml(e.quote)}"</em></div>
+            <div class="evidence-meta-row">
+              <span class="tag">Source: ${escapeHtml(e.source_id)}</span>
+              <span class="tag">Offsets: [${e.char_start}:${e.char_end}]</span>
+              <span class="tag">Date: ${escapeHtml(e.document_date || 'N/A')}</span>
+              <button class="btn-secondary" style="padding: 2px 6px; font-size: 0.6875rem;" onclick="inspectEvidence('${escapeHtml(e.source_id)}', ${e.char_start}, ${e.char_end})">
+                🔍 Inspect in Source
+              </button>
+            </div>
+          </div>
+        `).join('');
+
+        const gapsHtml = (c.missing_facts && c.missing_facts.length) ? `
+          <div class="gaps-box">
+            <strong>Clinical Documentation Gaps:</strong>
+            <ul style="margin-left: 20px; margin-top: 4px;">
+              ${c.missing_facts.map(f => `<li>${escapeHtml(f)}</li>`).join('')}
+            </ul>
+          </div>
+        ` : '';
+
+        return `
+          <div class="criterion-card">
+            <div class="crit-header">
+              <div class="crit-title-area">
+                <span class="mono" style="font-size: 0.75rem; color: var(--text-muted);">${c.criterion_id}</span>
+                <span class="crit-text">${escapeHtml(c.criterion)}</span>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <span class="tag" style="background: #e0e7ff; color: #3730a3;">Verified: ${c.verified ? 'YES' : 'NO'}</span>
+                <span class="badge badge-${c.status}">${c.status}</span>
+              </div>
+            </div>
+
+            <div class="crit-eval-box">
+              <strong>Assessment Reason:</strong> ${escapeHtml(c.reason || 'No clinical reasoning documented.')}
+            </div>
+
+            ${gapsHtml}
+
+            ${conflicting ? `
+              <div style="margin-bottom: 12px;">
+                <h4 style="font-size: 0.75rem; text-transform: uppercase; color: var(--danger); margin-bottom: 6px;">Conflicting / Refusal Evidence</h4>
+                ${conflicting}
+              </div>
+            ` : ''}
+
+            <div style="margin-bottom: 14px;">
+              <h4 style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">Supporting Evidence Citations (${(c.evidence || []).length})</h4>
+              ${supporting || '<p style="color: var(--text-muted); font-size: 0.8125rem;">No grounded supporting evidence found.</p>'}
+            </div>
+
+            <!-- In-line Reviewer Annotation -->
+            <div style="border-top: 1px dashed var(--border); padding-top: 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted);">Reviewer Action:</span>
+              <select id="action_${c.criterion_id}" style="font-size: 0.75rem;">
+                <option value="request_information">Request Additional Records (REQUEST_INFORMATION)</option>
+                <option value="accept_gap">Accept Documentation Gap (ACCEPT_GAP)</option>
+                <option value="flag_contradiction">Flag Contradiction (FLAG_CONTRADICTION)</option>
+                <option value="custom_note">Reviewer Note (CUSTOM_NOTE)</option>
+              </select>
+              <input type="text" id="note_${c.criterion_id}" placeholder="Mandatory reviewer rationale..." style="flex: 1; min-width: 220px; font-size: 0.75rem;">
+              <button class="btn-secondary" style="font-size: 0.75rem; padding: 6px 12px;" onclick="submitCriterionAnnotation('${c.criterion_id}')">
+                Save Annotation
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function submitCriterionAnnotation(critId) {
+      const action = document.getElementById(`action_${critId}`).value;
+      const note = document.getElementById(`note_${critId}`).value.trim();
+      if (!note) {
+        showToast("Reviewer clinical note is mandatory for audit logging.", true);
+        return;
+      }
+      try {
+        const res = await authFetch(`/api/v1/cases/${activeCaseId}/review`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ criterion_id: critId, action: action, note: note })
+        });
+        if (!res.ok) {
+          const msg = await parseErrorMessage(res, "Failed to record review action");
+          throw new Error(msg);
+        }
+        document.getElementById(`note_${critId}`).value = '';
+        showToast("Criterion annotation committed to audit trail.");
+        await loadActiveCaseWorkspace();
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    // Screen 5: Source Document Inspector
+    function renderDocumentNav() {
+      const container = document.getElementById('docListContainer');
+      if (!activeDocuments.length) {
+        container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.75rem;">No chart documents found.</p>';
+        return;
+      }
+      container.innerHTML = activeDocuments.map(d => `
+        <div class="doc-list-item" id="navDoc_${d.source_id}" onclick="loadDocumentDetail('${d.source_id}')">
+          <strong class="mono">${escapeHtml(d.source_id)}</strong>
+          <span style="font-size: 0.6875rem; color: var(--text-muted);">${escapeHtml(d.doc_date || 'No date')} (${d.character_count} chars)</span>
+        </div>
+      `).join('');
+    }
+
+    async function loadDocumentDetail(sourceId, highlightStart = null, highlightEnd = null) {
+      document.querySelectorAll('.doc-list-item').forEach(el => el.classList.remove('active'));
+      const activeEl = document.getElementById(`navDoc_${sourceId}`);
+      if (activeEl) activeEl.classList.add('active');
+
+      try {
+        const res = await authFetch(`/api/v1/cases/${activeCaseId}/documents/${sourceId}`);
+        if (!res.ok) {
+          const msg = await parseErrorMessage(res, `Failed to load document ${sourceId}`);
+          throw new Error(msg);
+        }
+        const doc = await res.json();
+
+        document.getElementById('docViewerTitle').innerText = doc.source_id;
+        document.getElementById('docViewerMeta').innerText = `Patient: ${doc.patient_id} | Date: ${doc.doc_date || 'N/A'} | Length: ${doc.character_count} chars | Chunks: ${doc.chunks_count}`;
+
+        const rawContainer = document.getElementById('docRawContent');
+        const rawText = doc.text;
+
+        if (highlightStart !== null && highlightEnd !== null && highlightStart < highlightEnd && highlightEnd <= rawText.length) {
+          const before = escapeHtml(rawText.substring(0, highlightStart));
+          const target = escapeHtml(rawText.substring(highlightStart, highlightEnd));
+          const after = escapeHtml(rawText.substring(highlightEnd));
+          rawContainer.innerHTML = `${before}<mark class="evidence-highlight" id="activeHighlightSpan">${target}</mark>${after}`;
+
+          document.getElementById('docVerificationStatus').innerHTML = `
+            <span class="badge badge-MET" style="font-size: 0.6875rem;">Offsets [${highlightStart}:${highlightEnd}] Verified</span>
+          `;
+          setTimeout(() => {
+            const el = document.getElementById('activeHighlightSpan');
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 100);
+        } else {
+          rawContainer.innerText = rawText;
+          document.getElementById('docVerificationStatus').innerHTML = `
+            <span class="tag">Verbatim Ground Truth</span>
+          `;
+        }
+      } catch (err) {
+        document.getElementById('docRawContent').innerHTML = `<span style="color: var(--danger);">Error: ${escapeHtml(err.message)}</span>`;
+        showToast(err.message, true);
+      }
+    }
+
+    function inspectEvidence(sourceId, charStart, charEnd) {
+      showWsSubView('wsInspectorView');
+      loadDocumentDetail(sourceId, charStart, charEnd);
+    }
+
+    // Document Ingestion Submission
+    async function submitDocumentIngest(e) {
+      e.preventDefault();
+      const payload = {
+        source_id: document.getElementById('ingestSourceId').value.trim(),
+        patient_id: activeCaseData.patient_id,
+        doc_date: document.getElementById('ingestDocDate').value,
+        mime_type: document.getElementById('ingestMimeType').value,
+        text: document.getElementById('ingestText').value
+      };
+
+      try {
+        const res = await authFetch(`/api/v1/cases/${activeCaseId}/documents`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+          const msg = await parseErrorMessage(res, "Ingestion rejected");
+          throw new Error(msg);
+        }
+        const resp = await res.json();
+        closeIngestModal();
+        showToast(`Document ${resp.source_id} ingested (${resp.chunks_created} chunks created).`);
+        await loadActiveCaseWorkspace();
+        loadDocumentDetail(resp.source_id);
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    // Screen 6: Advisory vs Authoritative Diff
+    async function triggerClaimAnalysis() {
+      try {
+        showToast("Running advisory AI claim analysis...");
+        const res = await authFetch(`/api/v1/cases/${activeCaseId}/claim-analysis`, { method: 'POST' });
+        if (!res.ok) {
+          const msg = await parseErrorMessage(res, "Claim analysis failed");
+          throw new Error(msg);
+        }
+        activeAdvisoryAnalysis = await res.json();
+        renderComparisonView();
+        showWsSubView('wsAdvisoryView');
+        showToast("Advisory claim analysis generated.");
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    function renderComparisonView() {
+      if (!activeAdvisoryAnalysis) return;
+      document.getElementById('advisoryProviderLabel').innerText = `Provider: ${activeAdvisoryAnalysis.analyzer_provider} (Generated: ${activeAdvisoryAnalysis.generated_at})`;
+
+      const authoritativeMap = {};
+      (activePacketData?.criteria || []).forEach(c => { authoritativeMap[c.criterion_id] = c; });
+
+      const container = document.getElementById('comparisonContainer');
+      container.innerHTML = activeAdvisoryAnalysis.proposals.map(p => {
+        const authCrit = authoritativeMap[p.criterion_id];
+        const authStatus = authCrit ? authCrit.status : 'NOT_EVALUATED';
+        const isAgreement = (authStatus === p.proposed_status);
+
+        return `
+          <div class="queue-card" style="margin-bottom: 16px; padding: 16px;">
+            <div style="font-weight: 700; font-size: 0.9375rem; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+              <span>Criterion ${p.criterion_id}</span>
+              <span class="badge ${isAgreement ? 'badge-MET' : 'badge-AMBIGUOUS'}">
+                ${isAgreement ? 'Status Agreement' : 'Status Divergence'}
+              </span>
+            </div>
+
+            <div class="comparison-grid">
+              <!-- Left: Authoritative Deterministic Truth -->
+              <div class="comp-col">
+                <div class="comp-header">
+                  <strong>Authoritative Verification</strong>
+                  <span class="badge badge-${authStatus}">${authStatus}</span>
+                </div>
+                <div style="font-size: 0.8125rem; color: #334155;">
+                  <div><strong>Verified:</strong> ${authCrit?.verified ? 'YES' : 'NO'}</div>
+                  <div style="margin-top: 4px;"><strong>Assessment:</strong> ${escapeHtml(authCrit?.reason || 'None')}</div>
+                </div>
+              </div>
+
+              <!-- Right: Advisory AI Suggestion -->
+              <div class="comp-col" style="background: #faf5ff; border-color: #e9d5ff;">
+                <div class="comp-header">
+                  <strong>Advisory AI Proposal</strong>
+                  <span class="badge badge-${p.proposed_status}">${p.proposed_status}</span>
+                </div>
+                <div style="font-size: 0.8125rem; color: #334155;">
+                  <div><strong>Confidence:</strong> ${(p.confidence * 100).toFixed(1)}%</div>
+                  <div style="margin-top: 4px;"><strong>Uncertainty Rationale:</strong> ${escapeHtml(p.uncertainty_rationale)}</div>
+                  <div style="margin-top: 4px; display: flex; gap: 4px; flex-wrap: wrap;">
+                    ${p.flags.map(f => `<span class="tag" style="background: #f3e8ff; color: #6b21a8;">${escapeHtml(f)}</span>`).join('')}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Screen 7: Adjudication Desk
+    function renderAdjudicationDesk() {
+      const warnBox = document.getElementById('adjudicationWarning');
+      const criteria = activePacketData?.criteria || [];
+      const hasUnmet = criteria.some(c => c.status !== 'MET');
+
+      if (hasUnmet) {
+        warnBox.innerHTML = `
+          <div class="gaps-box" style="margin-bottom: 0;">
+            ⚠️ <strong>Clinical Notice:</strong> One or more policy criteria are currently MISSING, AMBIGUOUS, or CONTRADICTED. Approval requires documented clinician justification or accepted gap annotations.
+          </div>
+        `;
+      } else {
+        warnBox.innerHTML = `
+          <div style="background: var(--success-bg); border: 1px solid #86efac; color: #166534; padding: 10px 14px; border-radius: 6px; font-size: 0.8125rem;">
+            ✅ <strong>All Criteria MET:</strong> All required clinical facts are substantiated in the patient chart.
+          </div>
+        `;
+      }
+
+      // Role permission check: Auditors cannot adjudicate
+      const btn = document.getElementById('btnSubmitFinal');
+      if (currentUserProfile?.role === 'auditor') {
+        btn.disabled = true;
+        btn.title = "Auditor role has read-only access. Clinician reviewer role required to adjudicate.";
+      } else {
+        btn.disabled = false;
+        btn.title = "";
+      }
+    }
+
+    async function submitFinalDetermination() {
+      const action = document.getElementById('finalActionSelect').value;
+      const note = document.getElementById('finalActionNote').value.trim();
+
+      if (!note) {
+        showToast("Clinical rationale is mandatory when finalizing an authorization packet.", true);
+        return;
+      }
+
+      try {
+        const res = await authFetch(`/api/v1/cases/${activeCaseId}/approve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: action, reviewer_note: note })
+        });
+        if (!res.ok) {
+          const msg = await parseErrorMessage(res, "Finalization failed");
+          throw new Error(msg);
+        }
+        document.getElementById('finalActionNote').value = '';
+        showToast("Final determination recorded successfully.");
+        await loadActiveCaseWorkspace();
+        showWsSubView('wsAuditView');
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    // Screen 8: Packet & Audit Trail View
+    function renderAuditTrail() {
+      const summaryBox = document.getElementById('packetSummaryBox');
+      const fin = activePacketData?.finalized;
+
+      summaryBox.innerHTML = `
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+          <div><strong>Packet Disposition:</strong> ${fin ? '<span class="badge badge-FINALIZED">FINALIZED</span>' : '<span class="badge badge-DRAFT">UNFINALIZED DRAFT</span>'}</div>
+          <div><strong>Case State:</strong> <span class="badge badge-${activeCaseData?.status}">${activeCaseData?.status}</span></div>
+          <div><strong>Criteria Count:</strong> ${(activePacketData?.criteria || []).length} evaluated</div>
+          <div><strong>Finalized At:</strong> ${escapeHtml(activePacketData?.finalized_at || 'Pending Clinician Signature')}</div>
+        </div>
+      `;
+
+      const tbody = document.getElementById('auditTrailBody');
+      const audits = activePacketData?.audit_events || [];
+
+      if (!audits.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 16px;">No audit records found.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = audits.map(a => `
+        <tr>
+          <td class="mono" style="font-size: 0.75rem;">${escapeHtml(a.created_at || '-')}</td>
+          <td><strong>${escapeHtml(a.actor || 'SYSTEM')}</strong></td>
+          <td><span class="mono tag">${escapeHtml(a.action)}</span></td>
+          <td class="mono">${escapeHtml(a.criterion_id || 'ALL')}</td>
+          <td>${escapeHtml(a.note || '-')}</td>
+        </tr>
+      `).join('');
+    }
+
+    async function triggerEvaluation() {
+      try {
+        showToast("Running deterministic evaluation...");
+        const res = await authFetch(`/api/v1/cases/${activeCaseId}/evaluate`, { method: 'POST' });
+        if (!res.ok) {
+          const msg = await parseErrorMessage(res, "Evaluation failed");
+          throw new Error(msg);
+        }
+        showToast("Deterministic evaluation completed.");
+        await loadActiveCaseWorkspace();
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    // Initial load: authenticate initial persona
+    window.addEventListener('DOMContentLoaded', () => {
+      loginAs('dr_chen');
+    });
   </script>
 </body>
 </html>

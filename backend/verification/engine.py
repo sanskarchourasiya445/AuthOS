@@ -34,9 +34,10 @@ NEUROLOGICAL_NEGATION_PATTERNS = [
 
 CONSERVATIVE_CRITERIA_KEYWORDS = ["conservative", "therapy", "pt", "physical therapy", "exercise", "treatment"]
 CONSERVATIVE_CONTRADICTION_PATTERNS = [
+    r"\b(?:patient\s+)?(?:explicitly\s+)?(?:declined|refused)\s+(?:(?:any|all|the|recommended|further)\s+)?(?:physical\s+therapy|pt|therapy|treatment|conservative|care|exercises?)\b",
+    r"\bpatient\s+(?:\w+\s+)?(?:declined|refused)\b",
     r"\bdeclined\s+(?:physical\s+therapy|pt|therapy|treatment|conservative|care)\b",
     r"\brefused\s+(?:physical\s+therapy|pt|therapy|treatment|conservative|care)\b",
-    r"\bpatient\s+declined\b",
     r"\bdeclined\s+at\s+this\s+visit\b",
     r"\bdiscontinued\s+(?:physical\s+therapy|pt|therapy|treatment)\b",
     r"\bstopped\s+(?:physical\s+therapy|pt|therapy)\b",

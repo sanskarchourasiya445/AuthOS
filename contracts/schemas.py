@@ -61,6 +61,10 @@ class ErrorCode(str, Enum):
     TOKEN_EXPIRED = "TOKEN_EXPIRED"
     ACCESS_DENIED = "ACCESS_DENIED"
     INSUFFICIENT_PERMISSIONS = "INSUFFICIENT_PERMISSIONS"
+    INVALID_DOCUMENT_FORMAT = "INVALID_DOCUMENT_FORMAT"
+    DOCUMENT_SIZE_EXCEEDED = "DOCUMENT_SIZE_EXCEEDED"
+    PROMPT_INJECTION_DETECTED = "PROMPT_INJECTION_DETECTED"
+    CLAIM_ANALYSIS_FAILED = "CLAIM_ANALYSIS_FAILED"
     INTERNAL_ERROR = "INTERNAL_ERROR"
 
 
@@ -234,3 +238,70 @@ class ErrorDetail(SchemaBase):
 class ErrorEnvelope(SchemaBase):
     """Standardized API error envelope."""
     error: ErrorDetail
+
+
+class DocumentIngestRequest(SchemaBase):
+    """Payload for ingesting a synthetic patient chart document."""
+    source_id: Annotated[str, Field(min_length=1, max_length=64, description="Unique document source identifier")]
+    patient_id: Annotated[str, Field(min_length=1, max_length=64, description="Owning synthetic patient identifier")]
+    text: Annotated[str, Field(min_length=1, max_length=500_000, description="Verbatim raw document text")]
+    doc_date: Annotated[str | None, Field(default=None, description="ISO-formatted document date (YYYY-MM-DD)")] = None
+    mime_type: Annotated[str, Field(default="text/plain", description="MIME format: text/plain, text/markdown, application/json")] = "text/plain"
+
+
+class DocumentIngestResponse(SchemaBase):
+    """Confirmation output following validated document ingestion and chunking."""
+    source_id: str
+    patient_id: str
+    doc_date: str | None
+    character_count: int
+    token_count: int
+    chunks_created: int
+    security_flags: list[str] = Field(default_factory=list, description="Security/adversarial detection flags")
+    created_at: str
+
+
+class AIClaimProposal(SchemaBase):
+    """Advisory, non-authoritative AI claim proposal for a single policy criterion."""
+    criterion_id: Annotated[str, Field(min_length=1, description="Policy criterion being evaluated")]
+    proposed_status: CriterionStatus = Field(description="Advisory proposed status: MET, MISSING, AMBIGUOUS, CONTRADICTED")
+    confidence: Annotated[float, Field(ge=0.0, le=1.0, description="Model uncertainty/confidence metric")]
+    evidence_quotes: list[EvidenceItem] = Field(default_factory=list, description="Cited verbatim evidence quotes")
+    missing_facts: list[str] = Field(default_factory=list, description="Clinical facts identified as missing")
+    detected_gaps: list[str] = Field(default_factory=list, description="Potential documentation gaps identified")
+    uncertainty_rationale: Annotated[str, Field(min_length=1, description="Structured explanation of uncertainty and evidence limits")]
+    is_ai_generated: bool = Field(default=True, description="Strict marker distinguishing AI proposal from authoritative result")
+    flags: list[str] = Field(default_factory=list, description="Diagnostic, safety, or prompt-injection audit flags")
+
+
+class ClaimAnalysisResponse(SchemaBase):
+    """Aggregated advisory claim analysis response for a prior-auth case."""
+    case_id: str
+    patient_id: str
+    policy_id: str
+    analyzer_provider: str
+    proposals: list[AIClaimProposal]
+    disclaimer: str = "AI-assisted claim analysis is advisory only. Not authoritative. Every evidence citation requires deterministic verification and human review."
+    generated_at: str
+
+
+class PatientDocumentSummary(SchemaBase):
+    """Summary of a patient chart document for case navigation."""
+    source_id: str
+    patient_id: str
+    doc_date: str | None = None
+    character_count: int
+    chunks_count: int = 0
+    created_at: str
+
+
+class PatientDocumentDetail(SchemaBase):
+    """Detailed patient chart document with raw verbatim text and chunk boundaries."""
+    source_id: str
+    patient_id: str
+    doc_date: str | None = None
+    text: str
+    character_count: int
+    chunks_count: int = 0
+    created_at: str
+

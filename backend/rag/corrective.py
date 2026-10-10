@@ -110,8 +110,29 @@ def retrieve_chart_candidates_bounded_corrective(
     - Strictly preserves `patient_id` boundary at every SQL query.
     - Caps total output at `top_k`.
     """
-    history: list[CorrectiveAttemptRecord] = []
+    if max_retries < 0 or max_retries > 5:
+        raise ValueError(f"max_retries must be between 0 and 5, got {max_retries}")
+
     budget = max_retries + 1  # 0 retries = 1 attempt, 2 retries = 3 attempts total
+
+    if not patient_id or not query or not query.strip():
+        audit = CorrectiveRetrievalResult(
+            candidates=[],
+            attempts_executed=1,
+            total_attempts_budget=budget,
+            history=[
+                CorrectiveAttemptRecord(
+                    attempt_index=0,
+                    query_used=query or "",
+                    candidates_found=0,
+                    stopped=True,
+                    reason="Empty or whitespace query provided; abstaining immediately",
+                )
+            ],
+        )
+        return [], audit
+
+    history: list[CorrectiveAttemptRecord] = []
 
     # Attempt 0: Initial query
     current_query = query
@@ -128,7 +149,7 @@ def retrieve_chart_candidates_bounded_corrective(
         attempt_index=0,
         query_used=current_query,
         candidates_found=len(candidates),
-        stopped=len(candidates) > 0,
+        stopped=len(candidates) > 0 or (max_retries == 0),
         reason="Initial retrieval successful" if candidates else "Initial retrieval produced 0 candidates",
     ))
 
@@ -137,13 +158,16 @@ def retrieve_chart_candidates_bounded_corrective(
         attempt += 1
         rewritten = rewrite_query_deterministic(query, attempt)
         if rewritten is None or rewritten == current_query:
+            is_stopped = (attempt >= max_retries)
             history.append(CorrectiveAttemptRecord(
                 attempt_index=attempt,
                 query_used=current_query,
                 candidates_found=0,
-                stopped=True,
-                reason=f"No further deterministic rewrite rule applicable for attempt {attempt}",
+                stopped=is_stopped,
+                reason=f"No deterministic rewrite rule applicable for attempt {attempt}",
             ))
+            if not is_stopped:
+                continue
             break
 
         current_query = rewritten
@@ -181,7 +205,7 @@ def retrieve_chart_candidates_bounded_corrective(
 
     audit = CorrectiveRetrievalResult(
         candidates=deduped,
-        attempts_executed=attempt + 1,
+        attempts_executed=len(history),
         total_attempts_budget=budget,
         history=history,
     )

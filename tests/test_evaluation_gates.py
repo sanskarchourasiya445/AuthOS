@@ -92,6 +92,7 @@ class EvaluationSafetyGatesTests(unittest.TestCase):
         from backend.db.seed import seed_synthetic_data
         from backend.rag.ingest import ingest_synthetic_records
         from backend.rag.retrieval import retrieve_chart_candidates
+        from backend.rag.corrective import retrieve_chart_candidates_bounded_corrective
         from backend.rag.dense_experiment import (
             retrieve_dense_chart_candidates,
             retrieve_hybrid_chart_candidates,
@@ -121,6 +122,17 @@ class EvaluationSafetyGatesTests(unittest.TestCase):
                         cand.patient_id,
                         case.prohibited_patient_ids,
                         f"BM25 leaked foreign patient {cand.patient_id} for case {case.case_id}",
+                    )
+
+                # Test Bounded Corrective
+                corr_cands, _ = retrieve_chart_candidates_bounded_corrective(
+                    session, patient_id=case.patient_id, query=case.query, top_k=5, max_retries=2
+                )
+                for cand in corr_cands:
+                    self.assertNotIn(
+                        cand.patient_id,
+                        case.prohibited_patient_ids,
+                        f"Corrective leaked foreign patient {cand.patient_id} for case {case.case_id}",
                     )
 
                 # Test Dense
