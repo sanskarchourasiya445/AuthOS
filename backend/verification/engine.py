@@ -56,6 +56,19 @@ SYMPTOM_NEGATION_PATTERNS = [
     r"\basymptomatic\b",
 ]
 
+HISTORICAL_NEGATION_TEMPORAL_PATTERNS = [
+    r"\b(?:in\s+20\d\d|in\s+19\d\d|prior\s+to\s+20\d\d)\b",
+    r"\b(?:\d+\s+years?\s+ago|\d+\s+months?\s+ago)\b",
+    r"\b(?:historically|previously|in\s+the\s+past|past\s+history|remote\s+history)\b",
+    r"\bhad\s+no\b",
+]
+
+CURRENT_SYMPTOM_INDICATORS = [
+    r"\b(?:currently|current|presently|today|now|ongoing|persistent)\b",
+    r"\b(?:reports|complains\s+of|presented\s+with|presents\s+with)\b",
+    r"\bfor\s+(?:\d+\s+(?:weeks?|months?|days?)|several\s+(?:weeks?|months?))\b",
+]
+
 # Patterns for ambiguity, incomplete trial, prospective plan, or documentation gaps
 CONSERVATIVE_AMBIGUITY_PATTERNS = [
     r"\bexact\s+start\s+date\s+and\s+duration\s+are\s+not\s+documented\b",
@@ -189,11 +202,40 @@ def detect_evidence_polarity(
 
     is_symptom_crit = has_keyword(crit_lower, SYMPTOM_CRITERIA_KEYWORDS)
     if is_symptom_crit:
-        for pat in SYMPTOM_NEGATION_PATTERNS:
-            match = re.search(pat, text, re.IGNORECASE)
-            if match:
-                signals.append(f"CONTRADICTION_SIGNAL (SYMPTOM_NEGATION): '{match.group(0)}'")
-                return EvidencePolarity.CONTRADICTING, signals
+        # Split text into sentence clauses to distinguish temporal scope and avoid false-positive contradictions
+        sentences = [s.strip() for s in re.split(r"(?<=[.!?\n;])\s+", text) if s.strip()] or [text]
+        has_active_current_negation = False
+        has_historical_negation = False
+        neg_matches = []
+
+        for sent in sentences:
+            for pat in SYMPTOM_NEGATION_PATTERNS:
+                match = re.search(pat, sent, re.IGNORECASE)
+                if match:
+                    is_hist = any(re.search(hp, sent, re.IGNORECASE) for hp in HISTORICAL_NEGATION_TEMPORAL_PATTERNS)
+                    if is_hist:
+                        has_historical_negation = True
+                        neg_matches.append((match.group(0), True))
+                    else:
+                        has_active_current_negation = True
+                        neg_matches.append((match.group(0), False))
+
+        if has_active_current_negation:
+            signals.append(f"CONTRADICTION_SIGNAL (SYMPTOM_NEGATION): '{neg_matches[0][0]}'")
+            return EvidencePolarity.CONTRADICTING, signals
+
+        if has_historical_negation:
+            has_current_symptoms = any(
+                ("back pain" in sent.lower() or "lumbar pain" in sent.lower() or "lumbago" in sent.lower())
+                and any(re.search(cur_pat, sent, re.IGNORECASE) for cur_pat in CURRENT_SYMPTOM_INDICATORS)
+                for sent in sentences
+            )
+            if has_current_symptoms:
+                signals.append(f"HISTORICAL_NEGATION_RECONCILED: '{neg_matches[0][0]}' vs current symptom report")
+                return EvidencePolarity.SUPPORTING, signals
+            else:
+                signals.append(f"AMBIGUITY_SIGNAL (HISTORICAL_NEGATION): '{neg_matches[0][0]}' is remote/historical")
+                return EvidencePolarity.UNCLEAR, signals
 
     # 2. Check ambiguity patterns
     if is_conservative_crit or not criterion_text:

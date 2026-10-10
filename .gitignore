@@ -14,3 +14,4 @@ dist/
 *.log
 .DS_Store
 .pg_data/
+test-results/

@@ -19,6 +19,7 @@ from dataclasses import dataclass, field
 import json
 import logging
 import os
+import re
 import time
 from typing import Any
 
@@ -192,21 +193,29 @@ class DeterministicStubProvider(BaseLLMProvider):
                 missing_facts = ["Lumbar MRI requested"]
         elif "symptom" in crit_lower or "back pain" in crit_lower:
             negations = ["no back pain", "denies back pain", "no lumbar pain", "no musculoskeletal"]
-            has_pain = any(
-                ("back pain" in text.lower() or "lumbago" in text.lower() or "lumbar pain" in text.lower())
-                and not any(neg in text.lower() for neg in negations)
-                for text in c_texts
-            )
-            has_explicit_negation = any(any(neg in text.lower() for neg in negations) for text in c_texts)
-            if has_pain:
-                status = "MET"
-                conf = 0.95
-                rationale = "Documentation of persistent low back symptoms confirmed by clinical exam/history."
-            elif has_explicit_negation:
+            has_pain = False
+            has_explicit_negation = False
+
+            for text in c_texts:
+                sentences = [s.strip() for s in re.split(r"(?<=[.!?\n;])\s+", text) if s.strip()] or [text]
+                for sent in sentences:
+                    s_lower = sent.lower()
+                    sent_has_neg = any(neg in s_lower for neg in negations)
+                    is_hist = any(h in s_lower for h in ["2020", "2019", "in 20", "years ago", "previously", "in the past", "had no"])
+                    if sent_has_neg and not is_hist:
+                        has_explicit_negation = True
+                    elif ("back pain" in s_lower or "lumbago" in s_lower or "lumbar pain" in s_lower) and not sent_has_neg:
+                        has_pain = True
+
+            if has_explicit_negation:
                 status = "CONTRADICTED"
                 conf = 0.90
                 rationale = "Chart documents explicit absence or negation of low back symptoms."
                 missing_facts = ["Low back pain"]
+            elif has_pain:
+                status = "MET"
+                conf = 0.95
+                rationale = "Documentation of persistent low back symptoms confirmed by clinical exam/history."
             else:
                 status = "MISSING"
                 conf = 0.85
