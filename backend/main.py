@@ -18,6 +18,15 @@ def create_app() -> FastAPI:
         redoc_url="/redoc",
     )
 
+    from fastapi.middleware.cors import CORSMiddleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000", "http://127.0.0.1:3000"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(request: Request, exc: RequestValidationError):
         """Standardize 422 validation errors to ErrorEnvelope."""
@@ -58,7 +67,13 @@ def create_app() -> FastAPI:
             content=envelope.model_dump(),
         )
 
+    from pathlib import Path
+    from fastapi.staticfiles import StaticFiles
     from backend.ui.router import ui_router
+
+    react_assets = Path(__file__).resolve().parents[1] / "frontend" / "dist" / "assets"
+    if react_assets.exists():
+        app.mount("/assets", StaticFiles(directory=str(react_assets)), name="react_assets")
 
     app.include_router(ui_router)
     app.include_router(api_v1_router, prefix=settings.api_prefix)

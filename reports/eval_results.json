@@ -1,14 +1,14 @@
 {
   "dataset_version": "eval-dataset-v1.0",
-  "timestamp": "2026-10-10T05:29:47.487160+00:00",
+  "timestamp": "2026-10-10T06:10:52.582365+00:00",
   "metadata": {
     "title": "AuthOS Reliability Baseline Evaluation Report",
     "dataset_version": "eval-dataset-v1.0",
-    "timestamp": "2026-10-10T05:29:47.487160+00:00",
+    "timestamp": "2026-10-10T06:10:52.582365+00:00",
     "environment": {
       "os": "Windows-11-10.0.26300-SP0",
       "python_version": "3.13.1",
-      "git_commit": "3f87a5c717c61156a006bd47c67e04f0cde5f240",
+      "git_commit": "a14ed3c441276fafccf4fddb6795438146c97928",
       "git_branch": "main",
       "git_dirty": "true"
     },
@@ -482,10 +482,10 @@
         "cross_patient_violations": 0,
         "all_safety_checks_passed": true,
         "latency_ms": {
-          "mean": 0.87,
-          "median": 0.67,
-          "min": 0.56,
-          "max": 1.75
+          "mean": 0.88,
+          "median": 0.68,
+          "min": 0.64,
+          "max": 1.58
         },
         "is_deterministic": true,
         "case_results": [
@@ -676,10 +676,10 @@
         "cross_patient_violations": 0,
         "all_safety_checks_passed": true,
         "latency_ms": {
-          "mean": 0.9,
-          "median": 0.88,
-          "min": 0.58,
-          "max": 1.32
+          "mean": 1.09,
+          "median": 0.99,
+          "min": 0.63,
+          "max": 2.04
         },
         "is_deterministic": true,
         "case_results": [
@@ -873,10 +873,10 @@
         "cross_patient_violations": 0,
         "all_safety_checks_passed": false,
         "latency_ms": {
-          "mean": 50.72,
-          "median": 33.1,
-          "min": 31.32,
-          "max": 200.9
+          "mean": 60.35,
+          "median": 38.08,
+          "min": 35.04,
+          "max": 259.13
         },
         "is_deterministic": true,
         "case_results": [
@@ -1088,10 +1088,10 @@
         "cross_patient_violations": 0,
         "all_safety_checks_passed": true,
         "latency_ms": {
-          "mean": 33.25,
-          "median": 32.98,
-          "min": 30.99,
-          "max": 35.44
+          "mean": 36.13,
+          "median": 36.52,
+          "min": 32.23,
+          "max": 39.42
         },
         "is_deterministic": true,
         "case_results": [
@@ -1278,10 +1278,10 @@
         "cross_patient_violations": 0,
         "all_safety_checks_passed": false,
         "latency_ms": {
-          "mean": 34.08,
-          "median": 33.69,
-          "min": 33.0,
-          "max": 35.94
+          "mean": 37.17,
+          "median": 36.43,
+          "min": 34.33,
+          "max": 40.45
         },
         "is_deterministic": true,
         "case_results": [
