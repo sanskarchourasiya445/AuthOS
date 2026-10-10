@@ -89,7 +89,20 @@ class AgentOrchestrator:
                 retry_round=crit["retrieval_round"],
             )
 
-            crit["candidates"] = result.candidates
+            if crit["retrieval_round"] == 1:
+                crit["candidates"] = result.candidates
+            else:
+                # Accumulate unique candidates across corrective rounds by chunk_id/source_id
+                existing_ids = {
+                    c.get("chunk_id") or c.get("source_id")
+                    for c in crit["candidates"]
+                }
+                for cand in result.candidates:
+                    cand_id = cand.get("chunk_id") or cand.get("source_id")
+                    if cand_id not in existing_ids:
+                        crit["candidates"].append(cand)
+                        existing_ids.add(cand_id)
+
             crit["query"] = result.query_used
             for f in result.flags:
                 if f not in crit["flags"]:
@@ -184,6 +197,15 @@ class AgentOrchestrator:
                 if flag not in crit["flags"]:
                     crit["flags"].append(flag)
 
+            # Enrich missing_facts from deterministic verifier feedback if verification failed or is incomplete
+            if not verif_res.verified or verif_res.status in (CriterionStatus.AMBIGUOUS, CriterionStatus.MISSING):
+                for flag in verif_res.validator_flags:
+                    flag_lower = flag.lower()
+                    if ("duration" in flag_lower or "date" in flag_lower) and "duration dates" not in crit["missing_facts"]:
+                        crit["missing_facts"].append("duration dates")
+                    elif "incomplete" in flag_lower and "supervised physical therapy" not in crit["missing_facts"]:
+                        crit["missing_facts"].append("supervised physical therapy")
+
             crit["status"] = "VERIFIED"
             return {
                 "criteria": state["criteria"],
@@ -200,6 +222,11 @@ class AgentOrchestrator:
             # Check timeout
             elapsed = time.monotonic() - state["start_time_monotonic"]
             if elapsed > state["time_budget_sec"]:
+                return "advance"
+
+            # If verified status is CONTRADICTED, short-circuit retries (clinical refusal is definitive)
+            verif_status = crit.get("verification_result", {}).get("status")
+            if verif_status == CriterionStatus.CONTRADICTED.value:
                 return "advance"
 
             # If not verified and status is MISSING/AMBIGUOUS and retries remain, attempt corrective retry

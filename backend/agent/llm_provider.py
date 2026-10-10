@@ -191,11 +191,22 @@ class DeterministicStubProvider(BaseLLMProvider):
                 rationale = "No physician order or requisition for requested imaging located in patient chart."
                 missing_facts = ["Lumbar MRI requested"]
         elif "symptom" in crit_lower or "back pain" in crit_lower:
-            has_pain = any("back pain" in text or "lumbago" in text or "lumbar pain" in text for text in c_texts)
+            negations = ["no back pain", "denies back pain", "no lumbar pain", "no musculoskeletal"]
+            has_pain = any(
+                ("back pain" in text.lower() or "lumbago" in text.lower() or "lumbar pain" in text.lower())
+                and not any(neg in text.lower() for neg in negations)
+                for text in c_texts
+            )
+            has_explicit_negation = any(any(neg in text.lower() for neg in negations) for text in c_texts)
             if has_pain:
                 status = "MET"
                 conf = 0.95
                 rationale = "Documentation of persistent low back symptoms confirmed by clinical exam/history."
+            elif has_explicit_negation:
+                status = "CONTRADICTED"
+                conf = 0.90
+                rationale = "Chart documents explicit absence or negation of low back symptoms."
+                missing_facts = ["Low back pain"]
             else:
                 status = "MISSING"
                 conf = 0.85
@@ -278,7 +289,9 @@ class GeminiProvider(BaseLLMProvider):
     def _get_client(self):
         if self._client is None and self._api_key:
             from google import genai
-            self._client = genai.Client(api_key=self._api_key)
+            from google.genai import types
+            http_opts = types.HttpOptions(timeout=int(self._timeout_seconds * 1000))
+            self._client = genai.Client(api_key=self._api_key, http_options=http_opts)
         return self._client
 
     def generate_proposal(

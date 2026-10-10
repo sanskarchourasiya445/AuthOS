@@ -47,6 +47,15 @@ CONSERVATIVE_CONTRADICTION_PATTERNS = [
     r"\bno\s+documentation\s+of\s+completed\b",
 ]
 
+SYMPTOM_CRITERIA_KEYWORDS = ["symptom", "pain", "back pain", "low back", "lumbago"]
+SYMPTOM_NEGATION_PATTERNS = [
+    r"\bno\s+(?:low\s+)?back\s+pain\b",
+    r"\bdenies\s+(?:low\s+)?back\s+pain\b",
+    r"\bno\s+(?:lumbar|spinal)\s+pain\b",
+    r"\bno\s+musculoskeletal\s+complaints\b",
+    r"\basymptomatic\b",
+]
+
 # Patterns for ambiguity, incomplete trial, prospective plan, or documentation gaps
 CONSERVATIVE_AMBIGUITY_PATTERNS = [
     r"\bexact\s+start\s+date\s+and\s+duration\s+are\s+not\s+documented\b",
@@ -176,6 +185,14 @@ def detect_evidence_polarity(
             match = re.search(pat, text, re.IGNORECASE)
             if match:
                 signals.append(f"CONTRADICTION_SIGNAL: '{match.group(0)}'")
+                return EvidencePolarity.CONTRADICTING, signals
+
+    is_symptom_crit = has_keyword(crit_lower, SYMPTOM_CRITERIA_KEYWORDS)
+    if is_symptom_crit:
+        for pat in SYMPTOM_NEGATION_PATTERNS:
+            match = re.search(pat, text, re.IGNORECASE)
+            if match:
+                signals.append(f"CONTRADICTION_SIGNAL (SYMPTOM_NEGATION): '{match.group(0)}'")
                 return EvidencePolarity.CONTRADICTING, signals
 
     # 2. Check ambiguity patterns
