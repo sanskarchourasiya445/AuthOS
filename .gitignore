@@ -15,3 +15,12 @@ dist/
 .DS_Store
 .pg_data/
 test-results/
+
+# Local-Only Project Documentation & Internal Reports
+/PLAN.md
+/docs/
+/reports/
+/frontend/README.md
+
+# Explicitly ensure root README.md remains tracked
+!/README.md

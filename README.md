@@ -146,7 +146,11 @@ AuthOS includes an experimental outward-facing MCP server adapter (`backend.mcp.
   python -m backend.mcp.server
   ```
   In production environments, a cryptographically signed JWT token must be provided via `AUTHOS_MCP_TOKEN` or tool-level `auth_token`.
-  See [`docs/decisions/ADR-007-mcp-feasibility.md`](docs/decisions/ADR-007-mcp-feasibility.md) for architectural analysis and security specifications.
+* **Architectural Boundaries**:
+  - Exposes 4 read-only tools: `authos_list_cases`, `authos_get_case`, `authos_lint_evidence`, and `authos_get_document_excerpt`.
+  - Zero approval, packet mutation, deletion, or arbitrary SQL execution tools.
+  - Diagnostic logging streams exclusively to `sys.stderr` to prevent JSON-RPC protocol corruption on `sys.stdout`.
+  - Cross-patient document access is strictly rejected (`CROSS_PATIENT_ACCESS_DENIED`).
 
 ---
 
@@ -159,4 +163,12 @@ AuthOS includes an experimental outward-facing MCP server adapter (`backend.mcp.
 > 4. **No Claim of Regulatory Clearance**: AuthOS is an engineering prototype. It has not been submitted for FDA clearance, HIPAA compliance audit, or insurer production approval.
 > 5. **Advisory LLM Decoupling**: External LLM evaluations (Google Gemini) remain decoupled; the core verification engine is completely deterministic and operates offline.
 
-For detailed operational guidance, see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+---
+
+## Operational Notes & Health Probes
+
+* **Health Endpoints**:
+  - `GET /health/live`: Basic process liveness probe (returns `{"status": "alive"}`).
+  - `GET /health/ready`: Deep dependency readiness probe verifying PostgreSQL connectivity and advisory LLM provider status.
+* **Database Port Mapping**: In Docker Compose, the PostgreSQL service is exposed on host port `5433` (`127.0.0.1:5433:5432`) to prevent conflicts with local host PostgreSQL installations, while internal container networking uses port `5432`.
+* **Advisory LLM Decoupling**: Defaults to `LLM_PROVIDER=stub` (offline deterministic). To optionally enable live Google Gemini advisory analysis, configure `LLM_PROVIDER=gemini` and set `GEMINI_API_KEY` in `.env`.
