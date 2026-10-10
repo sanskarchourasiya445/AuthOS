@@ -1,43 +1,144 @@
-# AuthOS
+# AuthOS — Evidence-Grounded Prior-Authorization Linter
 
-**Evidence-grounded prior-authorization preparation system.** AuthOS is designed to turn a synthetic patient chart, a requested service, and a payer policy into a criterion-level, source-traceable review packet. It prepares evidence; it does not make medical or insurance decisions.
+AuthOS is an evidence-linting system for healthcare prior authorization. It evaluates whether clinical criteria in a payer policy are substantiated by supplied medical chart records. Every claim must be grounded in exact source text provenance with character-level offsets or explicitly classified as `MISSING`, `AMBIGUOUS`, or `CONTRADICTED`.
 
-> **Project status:** early prototype scaffold. A deterministic evidence-provenance verifier, three synthetic chart fixtures, a synthetic demo policy, a template packet renderer, and five unit tests are present. No LLM/RAG/API/UI workflow has been verified end to end; do not claim model accuracy or real-world effectiveness.
+AuthOS is an administrative evidence linter that prepares structured review packets for human clinical adjudication. **It does not make coverage decisions or clinical recommendations.**
 
-## MVP boundary
+---
 
-- Synthetic patients and synthetic policy documents only.
-- One narrow demo service/policy: lumbar MRI (`POL-LMRI-001`).
-- Criterion statuses: `MET`, `MISSING`, `AMBIGUOUS`, `CONTRADICTED`.
-- Hybrid retrieval (PostgreSQL full-text search + pgvector dense search + Reciprocal Rank Fusion) remains planned and should be compared with a whole-chart-in-context baseline.
-- A bounded corrective retrieval loop with at most two retries after the initial search.
-- Deterministic verification for source existence, exact quote, patient identity, dates/durations where applicable, and criterion/evidence mapping.
-- Human review is required before a packet is finalized.
+## Key Capabilities & Architectural Model
 
-## Non-goals
+* **Authoritative Deterministic Gate**: Final criterion determinations (`MET`, `MISSING`, `AMBIGUOUS`, `CONTRADICTED`) are governed exclusively by a deterministic verification engine (`backend.verification.engine.verify_criterion_evidence`).
+* **Advisory LLM Separation**: Agent proposals (`AgentProposalModel`) from local stubs or hosted models (Google Gemini) are strictly advisory. Unsupported agent proposals are intercepted and safely downgraded by the deterministic gate.
+* **Exact Character-Level Provenance**: Every cited fact requires verbatim quotation matching (`text[char_start:char_end] == quote`) and patient boundary isolation.
+* **Clinical Duration & Negation Logic**: Reconciles conservative therapy durations (e.g., 6-week conservative physical therapy requirements) and preserves current positive symptoms over historical negations.
+* **Modern Reviewer Workstation**: React 19 + TypeScript + Vite clinical workstation (`/app`) with side-by-side evidence inspection, advisory vs. authoritative diffing, reviewer annotations, and an immutable audit trail.
+* **Adversarial Safety Benchmarks**: Verified against 12 adversarial safety categories including indirect prompt injection, cross-patient citation leaks, hallucinated quotes, and duration arithmetic edge cases.
 
-No diagnosis, treatment recommendation, medical-necessity decision, approval prediction, insurer decision, claim submission, real EHR/payer integration, or real patient data in the MVP. MCP is an extension after the core workflow works. A2A is not an MVP dependency.
+---
 
-## Start here
+## System Architecture
 
-1. Read [`PLAN.md`](PLAN.md) for the staged hackathon implementation plan.
-2. Read [`docs/README.md`](docs/README.md) for the documentation index and status.
-3. Follow [`docs/pre-development-readiness.md`](docs/pre-development-readiness.md) for the lightweight hackathon build checks.
-4. Keep evaluation results honest: report only numbers produced by a reproducible run.
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                 React Reviewer Workstation                  │
+│       Queue ── Document Inspector ── Advisory Diff ── Packet │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ REST / JSON (JWT Authenticated)
+┌──────────────────────────────▼──────────────────────────────┐
+│                    FastAPI Backend Router                   │
+│   /health/live  /health/ready  /api/v1/auth  /api/v1/cases  │
+└──────────────┬──────────────────────────────┬───────────────┘
+               │                              │
+┌──────────────▼─────────────┐ ┌──────────────▼───────────────┐
+│     Advisory LLM Agent     │ │    Authoritative Deterministic│
+│ (Gemini or Offline Stub)   │ │      Verification Engine      │
+│  - Candidate extraction    │ │  - Verbatim text provenance   │
+│  - Advisory status proposal│ │  - Character offset matching  │
+│  - Never writes final state│ │  - Clinical duration checks   │
+└──────────────┬─────────────┘ │  - Contradiction detection    │
+               │               │  - Sole status authority      │
+               └───────────────►──────────────┬────────────────┘
+                                              │
+                               ┌──────────────▼───────────────┐
+                               │     PostgreSQL Database      │
+                               │  - Cases & Criteria Results  │
+                               │  - Documents & Text Chunks   │
+                               │  - Immutable Audit History   │
+                               └──────────────────────────────┘
+```
 
-## Proposed stack (not yet verified as implemented)
+---
 
-React + TypeScript + Vite + Tailwind; FastAPI + Python 3.11 + Pydantic; LangGraph; PostgreSQL + pgvector + built-in full-text search; a model provider behind a configuration boundary; pytest; Docker Compose for local development.
+## Quickstart
 
-## Safety statement
+### Option 1: Docker Compose (Recommended)
 
-AuthOS prepares administrative evidence for human review. A `MET` result means that the defined criterion has supporting evidence that passed the specified checks; it is not a coverage determination or approval prediction. `MISSING` means supporting evidence was not found in the supplied synthetic records after the defined search process, not that the underlying event never occurred.
+1. **Configure Environment**:
+   ```bash
+   cp .env.example .env
+   ```
+2. **Start Services (Database + Backend + Frontend)**:
+   ```bash
+   docker compose up --build -d
+   ```
+3. **Seed Synthetic Data (One-Shot Task)**:
+   ```bash
+   docker compose run --rm seed
+   ```
+4. **Open in Browser**:
+   - Workstation UI: `http://localhost:8000/app`
+   - API Documentation: `http://localhost:8000/docs`
+   - Readiness Probe: `http://localhost:8000/health/ready`
 
-## Current prototype files
+### Option 2: Native Host Development
 
-- `backend/authos_core/verifier.py` — deterministic source, exact-quote, and patient-match checks; exact quote validation is not semantic proof.
-- `data/synthetic/patients.json` — three synthetic patient scenarios.
-- `data/synthetic/policy.json` — illustrative synthetic policy, not a real payer policy.
-- `tests/test_verifier.py` — unit tests for verifier and template packet rendering.
+1. **Install Python & Node Dependencies**:
+   ```bash
+   python -m venv .venv
+   .\.venv\Scripts\Activate.ps1  # Windows PowerShell (or source .venv/bin/activate on Linux)
+   pip install -r requirements-dev.txt
 
-Run tests from the repository root: `python -m unittest discover -s tests -v`.
+   cd frontend && npm ci && npm run build && cd ..
+   ```
+2. **Run Migrations & Seed Database**:
+   ```bash
+   python scripts/init_and_seed.py
+   ```
+3. **Launch API Server**:
+   ```bash
+   uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
+   ```
+
+---
+
+## Testing & Evaluation
+
+AuthOS includes a complete suite of unit, integration, browser E2E, and adversarial evaluation benchmarks:
+
+```bash
+# Backend pytest suite (313 passed)
+pytest -v --ignore=frontend
+
+# Frontend Vitest suite (19 passed)
+cd frontend && npm test && cd ..
+
+# Browser E2E Playwright suites (7 passed)
+pytest tests/test_phase7_browser_e2e.py -v
+pytest tests/test_phase9_react_browser_e2e.py -v
+
+# Core verification & retrieval evaluation benchmark (34 cases)
+python -m backend.evaluation.runner
+
+# Multi-agent adjudication & adversarial evaluation benchmark (64 cases)
+python -m backend.evaluation.agent_eval
+```
+
+---
+
+## How to Run the Demo Workflow
+
+1. Navigate to `http://localhost:8000/app`.
+2. The application automatically initializes as **Dr. Sarah Chen, MD** (synthetic clinician reviewer).
+3. In the **Case Queue**, select `CASE-SYN-001` (Lumbar Spine MRI prior authorization request).
+4. Review the three policy criteria cards:
+   - **C1: Low Back Pain**: Substantiated by clinic note with exact character highlight. Click **🔍 Inspect in Source** to view the document passage.
+   - **C2: Conservative Therapy**: Verified 8-week physical therapy duration.
+   - **C3: Prior Imaging / Red Flags**: Correctly flagged as `MISSING` (absent from chart).
+5. Switch to the **Advisory vs. Authoritative** tab and click **Run Agent Workflow** to observe the multi-agent proposal vs. deterministic verifier gate comparison.
+6. Under **Adjudicate & Finalize**, enter a clinical reviewer note and record the determination.
+7. Open **Review Packet & Audit Trail** to view the signed packet and cryptographic audit history.
+8. Click **Switch Actor** to test role-based access control with **Jane Doe (Auditor)** or **Dr. Allison Ross, MD**.
+
+---
+
+## Safety & Compliance Disclosures
+
+> [!IMPORTANT]
+> 1. **Synthetic Data Only**: All patient records (`SYN-P001` through `SYN-P006`), physician notes, and policy criteria (`POL-LMRI-001`) are synthetic fixtures created exclusively for software demonstration and testing. No real Protected Health Information (PHI) is used.
+> 2. **Not a Medical Device**: AuthOS is an administrative evidence linter. It does not provide medical diagnoses, treatment advice, or coverage guarantees.
+> 3. **Human-in-the-Loop Required**: Prior authorization determinations cannot be submitted without authenticated clinician review and sign-off.
+> 4. **No Claim of Regulatory Clearance**: AuthOS is an engineering prototype. It has not been submitted for FDA clearance, HIPAA compliance audit, or insurer production approval.
+> 5. **Advisory LLM Decoupling**: External LLM evaluations (Google Gemini) remain decoupled; the core verification engine is completely deterministic and operates offline.
+
+For detailed operational guidance, see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).

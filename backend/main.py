@@ -1,11 +1,51 @@
 """AuthOS FastAPI application entry point."""
+import logging
+from contextlib import asynccontextmanager
+from pathlib import Path
+from typing import AsyncGenerator
+
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+from sqlalchemy import text
 
+from backend.api.v1.health import health_router
 from backend.api.v1.router import api_v1_router
 from backend.config import settings
+from backend.db.session import SessionLocal
+from backend.ui.router import ui_router
 from contracts.schemas import ErrorCode, ErrorDetail, ErrorEnvelope
+
+logger = logging.getLogger("authos.main")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    """Application startup and shutdown operational lifecycle."""
+    # 1. Startup: Log environment and sanitized configuration without exposing credentials
+    logger.info("Initializing AuthOS Prior Authorization Evidence Linter...")
+    logger.info("Environment: %s", settings.app_env)
+    logger.info("Database Target: %s", settings.get_sanitized_database_url())
+    logger.info("Advisory LLM Provider: %s (model: %s)", settings.llm_provider, settings.llm_model)
+
+    # 2. Database Connectivity Verification
+    try:
+        with SessionLocal() as session:
+            session.execute(text("SELECT 1"))
+        logger.info("Database connection established successfully.")
+    except Exception as exc:
+        logger.warning(
+            "Database connection could not be established on startup (%s). "
+            "Ensure PostgreSQL is running and migrations are applied.",
+            type(exc).__name__,
+        )
+
+    yield
+
+    # 3. Shutdown
+    logger.info("AuthOS application shutting down cleanly.")
 
 
 def create_app() -> FastAPI:
@@ -16,9 +56,9 @@ def create_app() -> FastAPI:
         version="0.1.0",
         docs_url="/docs",
         redoc_url="/redoc",
+        lifespan=lifespan,
     )
 
-    from fastapi.middleware.cors import CORSMiddleware
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000", "http://127.0.0.1:3000"],
@@ -67,14 +107,12 @@ def create_app() -> FastAPI:
             content=envelope.model_dump(),
         )
 
-    from pathlib import Path
-    from fastapi.staticfiles import StaticFiles
-    from backend.ui.router import ui_router
-
     react_assets = Path(__file__).resolve().parents[1] / "frontend" / "dist" / "assets"
     if react_assets.exists():
         app.mount("/assets", StaticFiles(directory=str(react_assets)), name="react_assets")
 
+    # Mount UI router, root health endpoints, and versioned API router
+    app.include_router(health_router)
     app.include_router(ui_router)
     app.include_router(api_v1_router, prefix=settings.api_prefix)
     return app

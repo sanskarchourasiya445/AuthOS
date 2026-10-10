@@ -1,0 +1,83 @@
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database Service
+  # ---------------------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: authos-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-authos}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-authos}
+      POSTGRES_DB: ${POSTGRES_DB:-authos}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # Bind to localhost only; never expose PostgreSQL publicly
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-authos} -d ${POSTGRES_DB:-authos}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - authos-internal
+
+  # ---------------------------------------------------------------------------
+  # AuthOS API Backend & Reviewer Workstation Service
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: authos-backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-authos}:${POSTGRES_PASSWORD:-authos}@db:5432/${POSTGRES_DB:-authos}
+      AUTH_SECRET_KEY: ${AUTH_SECRET_KEY:-dev-insecure-secret-key-change-in-production-authos-2026}
+      AUTH_TOKEN_EXPIRE_MINUTES: ${AUTH_TOKEN_EXPIRE_MINUTES:-120}
+      LLM_PROVIDER: ${LLM_PROVIDER:-stub}
+      LLM_MODEL: ${LLM_MODEL:-gemini-2.5-flash-lite}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    ports:
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - authos-internal
+
+  # ---------------------------------------------------------------------------
+  # One-shot Synthetic Data Seeding Profile
+  # Usage: docker compose run --rm seed
+  # ---------------------------------------------------------------------------
+  seed:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: authos-seed
+    profiles:
+      - tools
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-authos}:${POSTGRES_PASSWORD:-authos}@db:5432/${POSTGRES_DB:-authos}
+    command: ["python", "-m", "backend.db.seed"]
+    restart: "no"
+    networks:
+      - authos-internal
+
+volumes:
+  pgdata:
+    driver: local
+
+networks:
+  authos-internal:
+    driver: bridge

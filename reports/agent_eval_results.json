@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-10T09:46:01.992097+00:00",
+  "timestamp": "2026-10-10T10:02:57.151358+00:00",
   "dataset_version": "eval-dataset-v1.0",
   "benchmarks": {
     "benchmark1_verifier_fixtures": {
@@ -15,7 +15,7 @@
       "citation_validity_rate": 0.9474,
       "abstention_rate_on_missing": 1.0,
       "contradiction_detection_rate": 1.0,
-      "avg_latency_ms": 0.3,
+      "avg_latency_ms": 0.31,
       "estimated_cost_usd": 0.0,
       "failure_count": 0,
       "repeatability_score": 1.0,
@@ -34,7 +34,7 @@
       "citation_validity_rate": 1.0,
       "abstention_rate_on_missing": 1.0,
       "contradiction_detection_rate": 1.0,
-      "avg_latency_ms": 1.31,
+      "avg_latency_ms": 1.4,
       "estimated_cost_usd": 0.0,
       "failure_count": 0,
       "repeatability_score": 1.0,
@@ -97,7 +97,7 @@
       "citation_validity_rate": 0.9167,
       "abstention_rate_on_missing": 1.0,
       "contradiction_detection_rate": 1.0,
-      "avg_latency_ms": 0.17,
+      "avg_latency_ms": 0.18,
       "estimated_cost_usd": 0.0,
       "failure_count": 0,
       "repeatability_score": 1.0,

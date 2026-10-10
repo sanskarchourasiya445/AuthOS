@@ -1,0 +1,6 @@
+# AuthOS Development & Testing Dependencies
+-r requirements.txt
+
+pytest==9.0.2
+pytest-asyncio==1.4.0
+playwright==1.63.0
