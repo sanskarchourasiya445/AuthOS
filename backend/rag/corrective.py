@@ -33,6 +33,13 @@ DETERMINISTIC_SYNONYM_RULES: list[tuple[str, str]] = [
     ("requisition for lumbar imaging study", "requests lumbar mri"),
     ("imaging study", "lumbar mri"),
     ("radiological study", "lumbar mri"),
+    # Symptom terminology bridging
+    ("lumbago", "low back pain lumbago"),
+    ("lumbar pain", "low back pain"),
+    # Physical therapy / conservative treatment bridging
+    ("physiotherapy", "physical therapy"),
+    ("spinal rehabilitation", "conservative treatment physical therapy"),
+    ("active rehabilitation", "supervised physical therapy"),
 ]
 
 

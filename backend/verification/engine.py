@@ -54,6 +54,7 @@ SYMPTOM_NEGATION_PATTERNS = [
     r"\bno\s+(?:lumbar|spinal)\s+pain\b",
     r"\bno\s+musculoskeletal\s+complaints\b",
     r"\basymptomatic\b",
+    r"\b(?:no|denies)\s+lumbago\b",
 ]
 
 HISTORICAL_NEGATION_TEMPORAL_PATTERNS = [
@@ -306,6 +307,8 @@ def verify_criterion_evidence(
         target_context = f"{criterion_text} {' '.join(req_facts)}"
         if has_keyword(criterion_text, CONSERVATIVE_CRITERIA_KEYWORDS):
             target_context += " therapy physical exercise conservative treatment"
+        elif has_keyword(criterion_text, SYMPTOM_CRITERIA_KEYWORDS):
+            target_context += " symptom pain lumbago lumbar sciatica radiculopathy"
         crit_terms = set(re.findall(r"[a-z]{4,}", target_context.lower())) - stop_words
         quote_terms = set(re.findall(r"[a-z]{4,}", quote.lower()))
         if crit_terms and not (crit_terms & quote_terms):
@@ -468,11 +471,11 @@ def verify_criterion_evidence(
             elif "cauda" in fact_lower or "bowel" in fact_lower or "bladder" in fact_lower:
                 fact_words.extend(["bowel", "bladder", "cauda equina", "incontinence"])
             elif "low back" in fact_lower or "back pain" in fact_lower:
-                fact_words.extend(["low back pain", "lumbar pain", "back pain"])
+                fact_words = ["low back pain", "lumbar pain", "back pain", "lumbago", "sciatica", "lumbar radiculopathy"]
             elif "persistent" in fact_lower or "symptom" in fact_lower:
                 fact_words.extend(["persistent symptoms", "ongoing", "unresolved", "persistent"])
             elif "physical therapy" in fact_lower or "conservative" in fact_lower:
-                fact_words.extend(["physical therapy", "pt", "supervised", "conservative"])
+                fact_words.extend(["physical therapy", "pt", "supervised", "conservative", "physiotherapy", "rehabilitation"])
 
             fact_found = any(re.search(r"\b" + re.escape(w) + r"\b", all_quotes, re.IGNORECASE) for w in fact_words)
             if not fact_found:

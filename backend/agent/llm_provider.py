@@ -192,7 +192,7 @@ class DeterministicStubProvider(BaseLLMProvider):
                 rationale = "No physician order or requisition for requested imaging located in patient chart."
                 missing_facts = ["Lumbar MRI requested"]
         elif "symptom" in crit_lower or "back pain" in crit_lower:
-            negations = ["no back pain", "denies back pain", "no lumbar pain", "no musculoskeletal"]
+            negations = ["no back pain", "denies back pain", "no lumbar pain", "no musculoskeletal", "no lumbago", "denies lumbago"]
             has_pain = False
             has_explicit_negation = False
 
