@@ -132,6 +132,24 @@ python -m backend.evaluation.agent_eval
 
 ---
 
+## Model Context Protocol (MCP) Integration (Experimental)
+
+AuthOS includes an experimental outward-facing MCP server adapter (`backend.mcp.server`) for desktop AI assistants (e.g. Anthropic Claude Desktop, Cursor):
+
+* **Protocol**: Model Context Protocol (JSON-RPC over `stdio`) via official `mcp` SDK.
+* **Scope**: Strictly read-only evidence linting, case inspection, and verbatim citation offset verification on synthetic cases.
+* **Security & Invariants**: Enforces JWT token authorization or local synthetic actor scoping, strict patient chart isolation, and deterministic verification. Exposes zero approval, mutation, or SQL query tools.
+* **Usage (Local Synthetic-Data Development Only)**:
+  ```cmd
+  :: For local development and testing only (fails closed in staging/production):
+  set AUTHOS_MCP_DEFAULT_ACTOR=dr_chen
+  python -m backend.mcp.server
+  ```
+  In production environments, a cryptographically signed JWT token must be provided via `AUTHOS_MCP_TOKEN` or tool-level `auth_token`.
+  See [`docs/decisions/ADR-007-mcp-feasibility.md`](docs/decisions/ADR-007-mcp-feasibility.md) for architectural analysis and security specifications.
+
+---
+
 ## Safety & Compliance Disclosures
 
 > [!IMPORTANT]
