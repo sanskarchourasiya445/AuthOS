@@ -277,8 +277,8 @@ class GeminiProvider(BaseLLMProvider):
         timeout_seconds: float | None = None,
         max_retries: int | None = None,
     ):
-        self._api_key = api_key or settings.gemini_api_key or os.getenv("GEMINI_API_KEY")
-        self._model_name = model_name or settings.llm_model or "gemini-2.5-flash-lite"
+        self._api_key = api_key if api_key is not None else (settings.gemini_api_key or os.getenv("GEMINI_API_KEY"))
+        self._model_name = model_name or settings.llm_model or "gemini-3.5-flash-lite"
         self._timeout_seconds = timeout_seconds or settings.llm_timeout_seconds
         self._max_retries = max_retries if max_retries is not None else settings.llm_max_retries
         self._client = None

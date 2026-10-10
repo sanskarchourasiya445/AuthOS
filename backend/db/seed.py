@@ -93,6 +93,16 @@ def seed_synthetic_data(session: Session) -> dict[str, int]:
         for case_id, res_payload in fixtures_data.get("results_by_case", {}).items():
             for cr in res_payload.get("criteria_results", []):
                 crit_id = cr["criterion_id"]
+                evidence_list = []
+                for ev in cr.get("evidence", []):
+                    ev_copy = dict(ev)
+                    if (ev_copy.get("char_start") is None or ev_copy.get("char_end") is None) and ev_copy.get("quote") and ev_copy.get("source_id"):
+                        doc = session.query(DocumentModel).filter_by(source_id=ev_copy["source_id"]).first()
+                        if doc and ev_copy["quote"] in doc.text:
+                            ev_copy["char_start"] = doc.text.find(ev_copy["quote"])
+                            ev_copy["char_end"] = ev_copy["char_start"] + len(ev_copy["quote"])
+                    evidence_list.append(ev_copy)
+
                 existing_res = (
                     session.query(CriterionResultModel)
                     .filter_by(case_id=case_id, criterion_id=crit_id)
@@ -105,13 +115,16 @@ def seed_synthetic_data(session: Session) -> dict[str, int]:
                         status=cr["status"],
                         verified=cr["verified"],
                         reason=cr.get("reason"),
-                        evidence=cr.get("evidence", []),
+                        evidence=evidence_list,
                         missing_facts=cr.get("missing_facts", []),
                         retry_log=cr.get("retry_log", []),
                         validator_flags=cr.get("validator_flags", []),
                     )
                     session.add(res_obj)
                     counts["results"] += 1
+                else:
+                    if any(e.get("char_start") is None for e in existing_res.evidence or []):
+                        existing_res.evidence = evidence_list
 
     session.flush()
     return counts

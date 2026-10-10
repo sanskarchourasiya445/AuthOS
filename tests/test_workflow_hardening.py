@@ -40,7 +40,7 @@ from contracts.schemas import (
     ReviewActionType,
 )
 
-TEST_DB_URL = os.getenv("TEST_DATABASE_URL", "postgresql+psycopg2://authos@localhost:5433/authos_test")
+TEST_DB_URL = os.getenv("TEST_DATABASE_URL", "postgresql+psycopg2://authos:authos@localhost:5433/authos_test")
 test_engine = create_engine(TEST_DB_URL, pool_pre_ping=True)
 TestSession = sessionmaker(bind=test_engine, autocommit=False, autoflush=False)
 
@@ -87,9 +87,10 @@ class WorkflowHardeningTests(unittest.TestCase):
         from alembic.config import Config
         from alembic import command
 
-        admin_engine = create_engine("postgresql+psycopg2://authos@localhost:5433/postgres", isolation_level="AUTOCOMMIT")
+        admin_url = TEST_DB_URL.rsplit('/', 1)[0] + '/postgres'
+        admin_engine = create_engine(admin_url, isolation_level="AUTOCOMMIT")
         disp_name = "authos_disposable_parity_test"
-        disp_url = f"postgresql+psycopg2://authos@localhost:5433/{disp_name}"
+        disp_url = f"{TEST_DB_URL.rsplit('/', 1)[0]}/{disp_name}"
 
         try:
             with admin_engine.connect() as conn:

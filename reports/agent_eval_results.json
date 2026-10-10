@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-10T10:02:57.151358+00:00",
+  "timestamp": "2026-10-10T13:15:45.614716+00:00",
   "dataset_version": "eval-dataset-v1.0",
   "benchmarks": {
     "benchmark1_verifier_fixtures": {
@@ -15,7 +15,7 @@
       "citation_validity_rate": 0.9474,
       "abstention_rate_on_missing": 1.0,
       "contradiction_detection_rate": 1.0,
-      "avg_latency_ms": 0.31,
+      "avg_latency_ms": 0.12,
       "estimated_cost_usd": 0.0,
       "failure_count": 0,
       "repeatability_score": 1.0,
@@ -34,16 +34,16 @@
       "citation_validity_rate": 1.0,
       "abstention_rate_on_missing": 1.0,
       "contradiction_detection_rate": 1.0,
-      "avg_latency_ms": 1.4,
+      "avg_latency_ms": 2.23,
       "estimated_cost_usd": 0.0,
       "failure_count": 0,
       "repeatability_score": 1.0,
       "status_note": "COMPLETED"
     },
     "benchmark2_full_chart_gemini": {
-      "method_name": "Multi-Agent Adjudication (Hosted Gemini gemini-2.5-flash-lite)",
+      "method_name": "Multi-Agent Adjudication (Hosted Gemini gemini-3.5-flash-lite)",
       "benchmark_scope": "FULL_CHART_ADJUDICATION",
-      "provider": "google_gemini (gemini-2.5-flash-lite)",
+      "provider": "google_gemini (gemini-3.5-flash-lite)",
       "total_evaluations": 0,
       "correct_statuses": 0,
       "accuracy": 0.0,
@@ -97,7 +97,7 @@
       "citation_validity_rate": 0.9167,
       "abstention_rate_on_missing": 1.0,
       "contradiction_detection_rate": 1.0,
-      "avg_latency_ms": 0.18,
+      "avg_latency_ms": 0.12,
       "estimated_cost_usd": 0.0,
       "failure_count": 0,
       "repeatability_score": 1.0,

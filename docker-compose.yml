@@ -40,7 +40,7 @@ services:
       AUTH_SECRET_KEY: ${AUTH_SECRET_KEY:-dev-insecure-secret-key-change-in-production-authos-2026}
       AUTH_TOKEN_EXPIRE_MINUTES: ${AUTH_TOKEN_EXPIRE_MINUTES:-120}
       LLM_PROVIDER: ${LLM_PROVIDER:-stub}
-      LLM_MODEL: ${LLM_MODEL:-gemini-2.5-flash-lite}
+      LLM_MODEL: ${LLM_MODEL:-gemini-3.5-flash-lite}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     ports:
       - "127.0.0.1:8000:8000"

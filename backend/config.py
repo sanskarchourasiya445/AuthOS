@@ -27,7 +27,7 @@ class Settings(BaseSettings):
 
     # LLM Provider & Evaluation (Phase 11)
     llm_provider: str = Field(default="stub", description="LLM provider identifier: 'stub' or 'gemini'")
-    llm_model: str = Field(default="gemini-2.5-flash-lite", description="LLM model identifier")
+    llm_model: str = Field(default="gemini-3.5-flash-lite", description="LLM model identifier")
     gemini_api_key: str | None = Field(default=None, description="Google Gemini API key")
     llm_timeout_seconds: float = Field(default=15.0, ge=1.0, le=120.0, description="LLM request timeout in seconds")
     llm_max_retries: int = Field(default=2, ge=0, le=5, description="Maximum number of LLM provider retries")

@@ -29,6 +29,7 @@ from backend.agent.llm_provider import (
 )
 from backend.agent.orchestrator import AgentOrchestrator
 from backend.agent.retrieval_agent import EvidenceRetrievalAgent
+from backend.config import settings
 from backend.db.models import AgentProposalModel, CaseModel, CriterionResultModel, DocumentModel
 from backend.db.seed import seed_synthetic_data
 from backend.db.session import SessionLocal
@@ -311,19 +312,20 @@ class TestPhase12EvaluationAndCoordination(unittest.TestCase):
 
     def test_missing_credentials_fails_closed_without_fake(self):
         """Verify that GeminiProvider returns typed MISSING_API_KEY when key is absent and never fakes cloud calls."""
-        provider = GeminiProvider(api_key=None)
-        res = provider.generate_proposal(
-            criterion_id="C1",
-            criterion_text="Documentation describes persistent low back symptoms",
-            patient_id="SYN-P001",
-            required_facts=[],
-            min_duration_days=None,
-            candidates=[],
-        )
-        self.assertFalse(res.success)
-        self.assertEqual(res.error_code, "MISSING_API_KEY")
-        self.assertIsNone(res.proposal)
-        self.assertTrue(res.is_external_llm)
+        with patch.object(settings, "gemini_api_key", None), patch.dict(os.environ, {"GEMINI_API_KEY": ""}):
+            provider = GeminiProvider(api_key=None)
+            res = provider.generate_proposal(
+                criterion_id="C1",
+                criterion_text="Documentation describes persistent low back symptoms",
+                patient_id="SYN-P001",
+                required_facts=[],
+                min_duration_days=None,
+                candidates=[],
+            )
+            self.assertFalse(res.success)
+            self.assertEqual(res.error_code, "MISSING_API_KEY")
+            self.assertIsNone(res.proposal)
+            self.assertTrue(res.is_external_llm)
 
     def test_socket_timeout_configured_on_gemini_client(self):
         """Verify that GeminiProvider sets types.HttpOptions timeout on genai.Client."""

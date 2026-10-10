@@ -283,7 +283,7 @@ def run_evaluation_pipeline(
     managed_session = False
     if session is None:
         try:
-            test_db_url = os.getenv("TEST_DATABASE_URL", "postgresql+psycopg2://authos@localhost:5433/authos_test")
+            test_db_url = os.getenv("TEST_DATABASE_URL", "postgresql+psycopg2://authos:authos@localhost:5433/authos_test")
             engine = create_engine(test_db_url)
             SessionLocal = sessionmaker(bind=engine)
             session = SessionLocal()

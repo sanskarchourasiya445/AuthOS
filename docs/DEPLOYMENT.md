@@ -50,7 +50,7 @@ cp .env.example .env
 | `AUTH_ALGORITHM` | No | `HS256` | Security | JWT signing algorithm. |
 | `AUTH_TOKEN_EXPIRE_MINUTES` | No | `120` | Security | Expiration duration for bearer access tokens. |
 | `LLM_PROVIDER` | No | `stub` | Agent | Advisory provider: `stub` (offline deterministic) or `gemini`. |
-| `LLM_MODEL` | No | `gemini-2.5-flash-lite` | Agent | LLM model identifier. |
+| `LLM_MODEL` | No | `gemini-3.5-flash-lite` | Agent | LLM model identifier. |
 | `GEMINI_API_KEY` | Conditional | `""` | Agent | Required only if `LLM_PROVIDER=gemini`. |
 | `LLM_TIMEOUT_SECONDS` | No | `15.0` | Agent | Per-call HTTP timeout for external provider. |
 | `LLM_MAX_RETRIES` | No | `2` | Agent | Maximum retry attempts for transient API errors. |

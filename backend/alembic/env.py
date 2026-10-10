@@ -14,12 +14,14 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
-# Environment variable DATABASE_URL takes priority, then explicit config, then settings.database_url
-env_db_url = os.getenv("DATABASE_URL")
-if env_db_url:
-    config.set_main_option("sqlalchemy.url", env_db_url)
-elif not config.get_main_option("sqlalchemy.url"):
-    config.set_main_option("sqlalchemy.url", settings.database_url)
+# Explicit config takes priority, then environment variable DATABASE_URL, then settings.database_url
+explicit_url = config.get_main_option("sqlalchemy.url")
+if not explicit_url:
+    env_db_url = os.getenv("DATABASE_URL")
+    if env_db_url:
+        config.set_main_option("sqlalchemy.url", env_db_url)
+    else:
+        config.set_main_option("sqlalchemy.url", settings.database_url)
 
 
 def run_migrations_offline() -> None:

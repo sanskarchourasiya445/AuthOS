@@ -47,7 +47,9 @@
               "patient_id": "SYN-P001",
               "quote": "Patient reports low back pain for 10 weeks. No bowel or bladder changes reported.",
               "document_date": "2026-08-01",
-              "retrieval_round": 1
+              "retrieval_round": 1,
+              "char_start": 0,
+              "char_end": 81
             }
           ],
           "missing_facts": [],
@@ -55,7 +57,10 @@
             {
               "round": 1,
               "query": "low back pain duration persistent symptoms",
-              "found": ["symptom_low_back_pain", "duration_10_weeks"],
+              "found": [
+                "symptom_low_back_pain",
+                "duration_10_weeks"
+              ],
               "missing": [],
               "sufficient": true
             }
@@ -73,7 +78,9 @@
               "patient_id": "SYN-P001",
               "quote": "Patient completed supervised physical therapy from July 1 through August 20, 2026, with persistent symptoms.",
               "document_date": "2026-09-15",
-              "retrieval_round": 1
+              "retrieval_round": 1,
+              "char_start": 0,
+              "char_end": 108
             }
           ],
           "missing_facts": [],
@@ -81,7 +88,11 @@
             {
               "round": 1,
               "query": "conservative treatment physical therapy duration dates",
-              "found": ["treatment_type_PT", "start_date_2026-07-01", "end_date_2026-08-20"],
+              "found": [
+                "treatment_type_PT",
+                "start_date_2026-07-01",
+                "end_date_2026-08-20"
+              ],
               "missing": [],
               "sufficient": true
             }
@@ -99,7 +110,9 @@
               "patient_id": "SYN-P001",
               "quote": "Ordering clinician requests lumbar MRI for persistent low back pain following conservative treatment.",
               "document_date": "2026-09-18",
-              "retrieval_round": 1
+              "retrieval_round": 1,
+              "char_start": 0,
+              "char_end": 101
             }
           ],
           "missing_facts": [],
@@ -107,7 +120,9 @@
             {
               "round": 1,
               "query": "ordering clinician request lumbar MRI",
-              "found": ["clinician_order_lumbar_mri"],
+              "found": [
+                "clinician_order_lumbar_mri"
+              ],
               "missing": [],
               "sufficient": true
             }
@@ -135,7 +150,9 @@
               "patient_id": "SYN-P002",
               "quote": "Patient reports low back pain for approximately 2 months.",
               "document_date": "2026-08-04",
-              "retrieval_round": 1
+              "retrieval_round": 1,
+              "char_start": 0,
+              "char_end": 57
             }
           ],
           "missing_facts": [],
@@ -143,7 +160,10 @@
             {
               "round": 1,
               "query": "low back pain duration symptoms",
-              "found": ["symptom_low_back_pain", "duration_2_months"],
+              "found": [
+                "symptom_low_back_pain",
+                "duration_2_months"
+              ],
               "missing": [],
               "sufficient": true
             }
@@ -161,27 +181,49 @@
               "patient_id": "SYN-P002",
               "quote": "Physical therapy was discussed. Patient attended several sessions; exact start date and duration are not documented.",
               "document_date": "2026-09-02",
-              "retrieval_round": 2
+              "retrieval_round": 2,
+              "char_start": 0,
+              "char_end": 116
             }
           ],
-          "missing_facts": ["start_date", "end_date", "duration_weeks"],
+          "missing_facts": [
+            "start_date",
+            "end_date",
+            "duration_weeks"
+          ],
           "retry_log": [
             {
               "round": 1,
               "query": "conservative treatment 6 weeks physical therapy",
-              "found": ["treatment_type_PT"],
-              "missing": ["start_date", "end_date", "duration_weeks"],
+              "found": [
+                "treatment_type_PT"
+              ],
+              "missing": [
+                "start_date",
+                "end_date",
+                "duration_weeks"
+              ],
               "sufficient": false
             },
             {
               "round": 2,
               "query": "physical therapy sessions attendance log dates duration discharge note",
-              "found": ["treatment_type_PT", "several_sessions_attended"],
-              "missing": ["start_date", "end_date", "duration_weeks"],
+              "found": [
+                "treatment_type_PT",
+                "several_sessions_attended"
+              ],
+              "missing": [
+                "start_date",
+                "end_date",
+                "duration_weeks"
+              ],
               "sufficient": false
             }
           ],
-          "validator_flags": ["DURATION_UNESTABLISHED", "INCOMPLETE_FACTS"],
+          "validator_flags": [
+            "DURATION_UNESTABLISHED",
+            "INCOMPLETE_FACTS"
+          ],
           "reason": "Ambiguous: PT attendance is mentioned, but exact start date and 6-week duration are missing after 2 retrieval rounds. Human review required to request records or accept documentation gap."
         },
         {
@@ -194,7 +236,9 @@
               "patient_id": "SYN-P002",
               "quote": "Lumbar MRI requested. Prior conservative-treatment duration requires clarification.",
               "document_date": "2026-09-03",
-              "retrieval_round": 1
+              "retrieval_round": 1,
+              "char_start": 0,
+              "char_end": 83
             }
           ],
           "missing_facts": [],
@@ -202,7 +246,9 @@
             {
               "round": 1,
               "query": "lumbar MRI order request",
-              "found": ["clinician_order_lumbar_mri"],
+              "found": [
+                "clinician_order_lumbar_mri"
+              ],
               "missing": [],
               "sufficient": true
             }
@@ -230,7 +276,9 @@
               "patient_id": "SYN-P003",
               "quote": "Patient reports low back pain for 8 weeks.",
               "document_date": "2026-08-10",
-              "retrieval_round": 1
+              "retrieval_round": 1,
+              "char_start": 0,
+              "char_end": 42
             }
           ],
           "missing_facts": [],
@@ -238,7 +286,10 @@
             {
               "round": 1,
               "query": "low back pain duration symptoms",
-              "found": ["symptom_low_back_pain", "duration_8_weeks"],
+              "found": [
+                "symptom_low_back_pain",
+                "duration_8_weeks"
+              ],
               "missing": [],
               "sufficient": true
             }
@@ -256,20 +307,31 @@
               "patient_id": "SYN-P003",
               "quote": "Physical therapy was offered. Patient declined physical therapy at this visit.",
               "document_date": "2026-08-11",
-              "retrieval_round": 1
+              "retrieval_round": 1,
+              "char_start": 0,
+              "char_end": 78
             }
           ],
-          "missing_facts": ["completed_conservative_treatment"],
+          "missing_facts": [
+            "completed_conservative_treatment"
+          ],
           "retry_log": [
             {
               "round": 1,
               "query": "conservative treatment physical therapy duration dates",
-              "found": ["treatment_declined"],
-              "missing": ["completed_conservative_treatment"],
+              "found": [
+                "treatment_declined"
+              ],
+              "missing": [
+                "completed_conservative_treatment"
+              ],
               "sufficient": false
             }
           ],
-          "validator_flags": ["PATIENT_DECLINED_TREATMENT", "MATERIAL_CONTRADICTION"],
+          "validator_flags": [
+            "PATIENT_DECLINED_TREATMENT",
+            "MATERIAL_CONTRADICTION"
+          ],
           "reason": "Contradicted: Note explicitly records that patient declined physical therapy. Required conservative treatment was not completed."
         },
         {
@@ -282,7 +344,9 @@
               "patient_id": "SYN-P003",
               "quote": "Lumbar MRI requested. Documentation of completed conservative treatment is not present in the supplied chart.",
               "document_date": "2026-08-12",
-              "retrieval_round": 1
+              "retrieval_round": 1,
+              "char_start": 0,
+              "char_end": 109
             }
           ],
           "missing_facts": [],
@@ -290,7 +354,9 @@
             {
               "round": 1,
               "query": "lumbar MRI clinician request order",
-              "found": ["clinician_order_lumbar_mri"],
+              "found": [
+                "clinician_order_lumbar_mri"
+              ],
               "missing": [],
               "sufficient": true
             }

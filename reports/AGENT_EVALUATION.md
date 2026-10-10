@@ -30,7 +30,7 @@ Evaluates the deterministic verifier directly on explicitly supplied candidate f
 - **Citation Validity Rate**: **94.7%**
 - **Abstention Rate on Missing**: **100.0%**
 - **Contradiction Detection Rate**: **100.0%**
-- **Average Latency**: **0.31 ms** per case
+- **Average Latency**: **0.12 ms** per case
 
 ---
 
@@ -47,7 +47,7 @@ Evaluates retrieval + multi-agent proposal + deterministic verification against 
 | **Citation Validity Rate** | **100.0%** | N/A (NOT RUN) | 100.0% |
 | **Abstention on Missing** | **100.0%** | N/A (NOT RUN) | 100.0% |
 | **Contradiction Detection** | **100.0%** | N/A (NOT RUN) | >= 80.0% |
-| **Average Latency (ms)** | **1.4 ms** | N/A (NOT RUN) | < 100 ms |
+| **Average Latency (ms)** | **2.23 ms** | N/A (NOT RUN) | < 100 ms |
 | **Repeatability Score** | **1.0** | N/A (NOT RUN) | 1.0 (100%) |
 
 ---
@@ -90,7 +90,7 @@ Evaluates safety-critical edge cases including clinical synonym expansion, compl
 - **Citation Validity Rate**: **91.7%**
 - **Abstention Rate on Missing**: **100.0%**
 - **Contradiction Detection Rate**: **100.0%**
-- **Average Latency**: **0.18 ms** per case
+- **Average Latency**: **0.12 ms** per case
 
 ---
 

@@ -1,4 +1,4 @@
-"""Contract and integration tests for FastAPI /api/v1 endpoints."""
+import os
 import unittest
 from fastapi.testclient import TestClient
 
@@ -26,7 +26,7 @@ from backend.db.seed import seed_synthetic_data
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-TEST_DB_URL = "postgresql+psycopg2://authos@localhost:5433/authos_test"
+TEST_DB_URL = os.getenv("TEST_DATABASE_URL", "postgresql+psycopg2://authos:authos@localhost:5433/authos_test")
 test_engine = create_engine(TEST_DB_URL, pool_pre_ping=True)
 TestSession = sessionmaker(bind=test_engine, autocommit=False, autoflush=False)
 
